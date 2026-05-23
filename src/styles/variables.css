@@ -1,0 +1,68 @@
+/* EAP Simulator - Design Tokens */
+
+:root {
+  /* Primary Brand */
+  --eap-primary: #409EFF;
+  --eap-primary-light: #66b1ff;
+  --eap-primary-dark: #337ecc;
+
+  /* Semantic Colors */
+  --eap-success: #67C23A;
+  --eap-warning: #E6A23C;
+  --eap-danger: #F56C6C;
+  --eap-info: #909399;
+
+  /* Status Colors */
+  --eap-status-running: #67C23A;
+  --eap-status-starting: #E6A23C;
+  --eap-status-error: #F56C6C;
+  --eap-status-stopped: #909399;
+
+  /* Neutral Colors */
+  --eap-text-primary: #303133;
+  --eap-text-regular: #606266;
+  --eap-text-secondary: #909399;
+  --eap-text-placeholder: #A8ABB2;
+
+  /* Background Colors */
+  --eap-bg-page: #f5f5f5;
+  --eap-bg-card: #ffffff;
+  --eap-bg-sidebar: #304156;
+  --eap-bg-header: #f5f7fa;
+  --eap-bg-search: #fafafa;
+
+  /* Border Colors */
+  --eap-border-base: #DCDFE6;
+  --eap-border-light: #E4E7ED;
+  --eap-border-lighter: #EBEEF5;
+
+  /* Spacing Scale */
+  --eap-space-xs: 4px;
+  --eap-space-sm: 8px;
+  --eap-space-md: 16px;
+  --eap-space-lg: 24px;
+  --eap-space-xl: 32px;
+
+  /* Typography */
+  --eap-font-size-sm: 12px;
+  --eap-font-size-base: 14px;
+  --eap-font-size-lg: 16px;
+  --eap-font-size-xl: 18px;
+  --eap-font-size-2xl: 20px;
+  --eap-font-size-3xl: 28px;
+
+  /* Layout */
+  --eap-header-height: 60px;
+  --eap-sidebar-width: 200px;
+  --eap-sidebar-collapsed: 64px;
+  --eap-toolbar-height: 45px;
+
+  /* Radius */
+  --eap-radius-sm: 4px;
+  --eap-radius-base: 6px;
+  --eap-radius-lg: 12px;
+
+  /* Shadows */
+  --eap-shadow-card: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  --eap-shadow-login: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
