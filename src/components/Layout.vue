@@ -8,7 +8,7 @@
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
         <template v-else>
-          <div class="logo-title">HH Eap Simualator</div>
+          <div class="logo-title">HH EAP Simulator</div>
           <div class="logo-subtitle">Equipment Automation</div>
         </template>
       </div>
@@ -205,7 +205,7 @@ watch(() => route.path, (path) => {
         '/vendors': 'Vendor & Model',
         '/checklist': 'Checklist'
      }
-   return titles[path] || 'EAP Simulator'
+   return titles[path] || 'HH EAP Simulator'
  }
 
 const showPwdDialog = ref(false)

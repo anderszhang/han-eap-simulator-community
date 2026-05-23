@@ -1,6 +1,6 @@
 # Distribution Notice
 
-This repository contains the public frontend source for EAP Simulator.
+This repository contains the public frontend source for HH EAP Simulator.
 
 ## License Scope
 

@@ -1,4 +1,4 @@
-# EAP Simulator Web UI
+# HH EAP Simulator Web UI
 
 Vue 3 frontend for the EAP simulator. The frontend can run against a separately
 hosted backend or be bundled into a backend distribution.

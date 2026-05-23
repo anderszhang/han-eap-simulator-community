@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h1>EAP Simulator</h1>
+        <h1>HH EAP Simulator</h1>
         <p>Semiconductor EAP Simulation System</p>
       </div>
       
