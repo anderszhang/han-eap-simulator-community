@@ -42,3 +42,10 @@ and released separately from this frontend source tree.
 
 The internal checklist Excel template is intentionally excluded until a
 reviewed public template is available.
+
+## License
+
+The frontend source code and frontend documentation in this repository are
+licensed under the MIT License. Backend source code, prebuilt backend binaries,
+application distributions, database migrations, seed datasets, and checklist
+templates are excluded and require separate distribution terms.
