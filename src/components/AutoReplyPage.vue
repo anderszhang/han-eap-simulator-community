@@ -48,19 +48,21 @@
         <el-table-column prop="match" label="Match" width="160" show-overflow-tooltip />
         <el-table-column prop="reply" label="Reply Content" min-width="200" show-overflow-tooltip />
         <el-table-column prop="username" label="Creator" width="100" />
-        <el-table-column label="Actions" width="200" fixed="right">
+        <el-table-column label="Actions" width="200" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button text @click="handleCopy(row)" title="Copy">
-              <el-icon><CopyDocument /></el-icon>
-            </el-button>
-            <template v-if="row.userId === currentUser?.id">
-              <el-button text type="primary" @click="handleEdit(row)" title="Edit">
-                <el-icon><Edit /></el-icon>
+            <div class="row-actions">
+              <el-button text @click="handleCopy(row)" title="Copy">
+                <el-icon><CopyDocument /></el-icon>
               </el-button>
-              <el-button text type="danger" @click="handleDelete(row)" title="Delete">
-                <el-icon><Delete /></el-icon>
-              </el-button>
-            </template>
+              <template v-if="row.userId === currentUser?.id">
+                <el-button text type="primary" @click="handleEdit(row)" title="Edit">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+                <el-button text type="danger" @click="handleDelete(row)" title="Delete">
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </template>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -584,6 +586,18 @@ onMounted(() => {
 
 .search-bar :deep(.el-form-item__label) {
   font-size: 13px;
+}
+
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.row-actions :deep(.el-button) {
+  margin-left: 0;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 .data-table {

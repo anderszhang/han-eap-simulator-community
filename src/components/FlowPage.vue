@@ -58,13 +58,15 @@
             </el-table-column>
             <el-table-column prop="username" label="Creator" width="100" />
             <el-table-column prop="createTime" label="Created" width="165" />
-            <el-table-column label="Actions" min-width="140" fixed="right">
+            <el-table-column label="Actions" min-width="160" fixed="right" align="center">
               <template #default="{ row }">
-                <el-button text type="success" :disabled="!row.published" @click="handleRun(row)" title="Run in Auto SECS"><el-icon><VideoPlay /></el-icon></el-button>
-                <el-button v-if="row.userId === currentUser?.id" text type="primary" @click="handleEdit(row)" title="Edit Flow"><el-icon><Edit /></el-icon></el-button>
-                <el-button v-if="row.userId === currentUser?.id" text @click="handleEditProps(row)" title="Edit Properties"><el-icon><SetUp /></el-icon></el-button>
-                <el-button text @click="handleCopy(row)" title="Copy"><el-icon><CopyDocument /></el-icon></el-button>
-                <el-button v-if="row.userId === currentUser?.id" text type="danger" @click="handleDelete(row)" title="Delete"><el-icon><Delete /></el-icon></el-button>
+                <div class="row-actions">
+                  <el-button text type="success" :disabled="!row.published" @click="handleRun(row)" title="Run in Auto SECS"><el-icon><VideoPlay /></el-icon></el-button>
+                  <el-button v-if="row.userId === currentUser?.id" text type="primary" @click="handleEdit(row)" title="Edit Flow"><el-icon><Edit /></el-icon></el-button>
+                  <el-button v-if="row.userId === currentUser?.id" text @click="handleEditProps(row)" title="Edit Properties"><el-icon><SetUp /></el-icon></el-button>
+                  <el-button text @click="handleCopy(row)" title="Copy"><el-icon><CopyDocument /></el-icon></el-button>
+                  <el-button v-if="row.userId === currentUser?.id" text type="danger" @click="handleDelete(row)" title="Delete"><el-icon><Delete /></el-icon></el-button>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -121,10 +123,12 @@
             </el-table-column>
             <el-table-column prop="username" label="Creator" width="100" />
             <el-table-column prop="createTime" label="Created" width="165" />
-              <el-table-column label="Actions" width="120" fixed="right">
+              <el-table-column label="Actions" width="120" fixed="right" align="center">
                 <template #default="{ row }">
-                  <el-button text @click="handleUseTemplate(row)" title="Use Template"><el-icon><CopyDocument /></el-icon></el-button>
-                  <el-button v-if="row.userId === currentUser?.id" text type="danger" @click="handleDeleteTemplate(row)" title="Delete"><el-icon><Delete /></el-icon></el-button>
+                  <div class="row-actions">
+                    <el-button text @click="handleUseTemplate(row)" title="Use Template"><el-icon><CopyDocument /></el-icon></el-button>
+                    <el-button v-if="row.userId === currentUser?.id" text type="danger" @click="handleDeleteTemplate(row)" title="Delete"><el-icon><Delete /></el-icon></el-button>
+                  </div>
                 </template>
               </el-table-column>
           </el-table>
@@ -620,6 +624,18 @@ onMounted(() => {
   justify-content: flex-end;
   flex-shrink: 0;
   border-top: 1px solid #ebeef5;
+}
+
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.row-actions :deep(.el-button) {
+  margin-left: 0;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 :deep(.el-table .cell) { white-space: nowrap; }

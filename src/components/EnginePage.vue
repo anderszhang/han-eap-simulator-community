@@ -91,28 +91,30 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="Actions" min-width="120" fixed="right">
+        <el-table-column label="Actions" min-width="140" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button
-              text
-              :disabled="row.status === 'starting'"
-              @click="handleStartStop(row)"
-              :title="isActive(row.status) ? 'Stop' : 'Start'"
-            >
-              <el-icon :color="isActive(row.status) ? '#F56C6C' : '#67C23A'">
-                <VideoPlay v-if="!isActive(row.status)" />
-                <VideoPause v-else />
-              </el-icon>
-            </el-button>
-            <el-button v-if="row.userId === currentUser?.id" text type="primary" @click="handleEdit(row)" title="Edit">
-              <el-icon><Edit /></el-icon>
-            </el-button>
-            <el-button text @click="handleDownloadLogs(row)" title="Download Logs">
-              <el-icon><Download /></el-icon>
-            </el-button>
-            <el-button v-if="row.userId === currentUser?.id" text type="danger" @click="handleDelete(row)" title="Delete">
-              <el-icon><Delete /></el-icon>
-            </el-button>
+            <div class="row-actions">
+              <el-button
+                text
+                :disabled="row.status === 'starting'"
+                @click="handleStartStop(row)"
+                :title="isActive(row.status) ? 'Stop' : 'Start'"
+              >
+                <el-icon :color="isActive(row.status) ? '#F56C6C' : '#67C23A'">
+                  <VideoPlay v-if="!isActive(row.status)" />
+                  <VideoPause v-else />
+                </el-icon>
+              </el-button>
+              <el-button v-if="row.userId === currentUser?.id" text type="primary" @click="handleEdit(row)" title="Edit">
+                <el-icon><Edit /></el-icon>
+              </el-button>
+              <el-button text @click="handleDownloadLogs(row)" title="Download Logs">
+                <el-icon><Download /></el-icon>
+              </el-button>
+              <el-button v-if="row.userId === currentUser?.id" text type="danger" @click="handleDelete(row)" title="Delete">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -675,6 +677,18 @@ onMounted(() => {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.row-actions :deep(.el-button) {
+  margin-left: 0;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 .pagination {

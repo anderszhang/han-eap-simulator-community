@@ -21,29 +21,31 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Actions" min-width="200" fixed="right">
+        <el-table-column label="Actions" min-width="200" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button
-              text
-              :type="row.status === 'enabled' ? 'warning' : 'success'"
-              @click="toggleStatus(row)"
-              :disabled="row.id === currentUser?.id"
-              :title="row.status === 'enabled' ? 'Disable' : 'Enable'"
-            >
-              <el-icon><component :is="row.status === 'enabled' ? 'CircleClose' : 'CircleCheck'" /></el-icon>
-            </el-button>
-            <el-button text @click="openResetPwd(row)" title="Reset Password">
-              <el-icon><Key /></el-icon>
-            </el-button>
-            <el-button
-              text
-              type="danger"
-              @click="handleDelete(row)"
-              :disabled="row.id === currentUser?.id"
-              title="Delete"
-            >
-              <el-icon><Delete /></el-icon>
-            </el-button>
+            <div class="row-actions">
+              <el-button
+                text
+                :type="row.status === 'enabled' ? 'warning' : 'success'"
+                @click="toggleStatus(row)"
+                :disabled="row.id === currentUser?.id"
+                :title="row.status === 'enabled' ? 'Disable' : 'Enable'"
+              >
+                <el-icon><component :is="row.status === 'enabled' ? 'CircleClose' : 'CircleCheck'" /></el-icon>
+              </el-button>
+              <el-button text @click="openResetPwd(row)" title="Reset Password">
+                <el-icon><Key /></el-icon>
+              </el-button>
+              <el-button
+                text
+                type="danger"
+                @click="handleDelete(row)"
+                :disabled="row.id === currentUser?.id"
+                title="Delete"
+              >
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -205,6 +207,18 @@ onMounted(() => {
 .mb-4 {
   margin-bottom: 20px;
 }
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.row-actions :deep(.el-button) {
+  margin-left: 0;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;

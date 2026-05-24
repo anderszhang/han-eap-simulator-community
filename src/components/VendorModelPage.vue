@@ -97,14 +97,16 @@
               <el-table-column prop="category" label="Category" width="100" />
               <el-table-column prop="description" label="Description" min-width="160" show-overflow-tooltip />
               <el-table-column prop="createTime" label="Created" min-width="165" />
-              <el-table-column label="Actions" min-width="100" fixed="right">
+              <el-table-column label="Actions" min-width="120" fixed="right" align="center">
                 <template #default="{ row }">
-                  <el-button text type="primary" @click="handleEditModel(row)" title="Edit">
-                    <el-icon><Edit /></el-icon>
-                  </el-button>
-                  <el-button text type="danger" @click="handleDeleteModel(row)" title="Delete">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
+                  <div class="row-actions">
+                    <el-button text type="primary" @click="handleEditModel(row)" title="Edit">
+                      <el-icon><Edit /></el-icon>
+                    </el-button>
+                    <el-button text type="danger" @click="handleDeleteModel(row)" title="Delete">
+                      <el-icon><Delete /></el-icon>
+                    </el-button>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -972,6 +974,18 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.row-actions :deep(.el-button) {
+  margin-left: 0;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 :deep(.el-table .cell) { white-space: nowrap; }
