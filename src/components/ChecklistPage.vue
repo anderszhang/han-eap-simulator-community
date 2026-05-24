@@ -62,7 +62,7 @@
         <el-table-column prop="ceidCount" label="CEIDs" width="70" align="center" />
         <el-table-column prop="username" label="Creator" width="100" />
         <el-table-column prop="createTime" label="Created" width="165" />
-        <el-table-column label="Actions" width="145" fixed="right" align="center">
+          <el-table-column label="Actions" width="160" fixed="right" align="center">
           <template #default="{ row }">
             <div class="row-actions">
               <el-button v-if="row.userId === currentUser?.id" text type="primary" @click="handleEdit(row)" title="Edit">
@@ -680,7 +680,7 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 12px;
 }
 
 .row-actions :deep(.el-button) {
