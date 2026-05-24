@@ -71,11 +71,34 @@
                   <el-button size="small" type="primary" @click="handleEditCEID(selectedCEID)">Edit CEID</el-button>
                 </div>
                 <div v-if="selectedCEID.description" class="ceid-desc">{{ selectedCEID.description }}</div>
-                <el-divider content-position="left">Reports</el-divider>
+                <div class="report-toolbar">
+                  <div class="report-title">Reports</div>
+                  <el-select
+                    v-model="selectedCEIDAddReport"
+                    filterable
+                    size="small"
+                    placeholder="Add Report..."
+                    style="width: 220px"
+                    :disabled="availableRPTIDsForSelectedCEID.length === 0"
+                    @change="addReportToSelectedCEID"
+                  >
+                    <el-option
+                      v-for="r in availableRPTIDsForSelectedCEID"
+                      :key="r.id"
+                      :label="`${r.name} (${r.rptid})`"
+                      :value="r.name"
+                    />
+                  </el-select>
+                </div>
                 <div v-for="rpt in selectedCEIDReports" :key="rpt.rptid" class="report-card">
                   <div class="report-header">
-                    <el-tag type="warning" size="small">RPTID {{ rpt.rptid }}</el-tag>
-                    <span class="report-name">{{ rpt.name }}</span>
+                    <div class="report-header-main">
+                      <el-tag type="warning" size="small">RPTID {{ rpt.rptid }}</el-tag>
+                      <span class="report-name">{{ rpt.name }}</span>
+                    </div>
+                    <el-button size="small" type="danger" text @click="removeReportFromSelectedCEID(rpt)" title="Remove Report">
+                      <el-icon><Delete /></el-icon>
+                    </el-button>
                   </div>
                   <table class="vid-table">
                     <thead><tr><th style="width:40px">#</th><th style="width:70px">VID</th><th>Name</th><th style="width:60px">Format</th><th>ValueMap</th></tr></thead>
@@ -517,6 +540,7 @@ const ceidSearch = ref('')
 
 const expandedVIDRows = ref<number[]>([])
 const selectedCEID = ref<ChecklistCEID | null>(null)
+const selectedCEIDAddReport = ref('')
 
 const showImportDialog = ref(false)
 const importFile = ref<File | null>(null)
@@ -585,6 +609,11 @@ const selectedCEIDReports = computed(() => {
   const names = selectedCEID.value.links.split(',').map(s => s.trim()).filter(Boolean)
   return names.map(n => rptids.value.find(r => r.name === n)).filter(Boolean) as ChecklistRPTID[]
 })
+const availableRPTIDsForSelectedCEID = computed(() => {
+  if (!selectedCEID.value) return []
+  const current = getCEIDReportNames(selectedCEID.value)
+  return rptids.value.filter(r => !current.includes(r.name))
+})
 
 // ---- Helpers ----
 const getReportVIDs = (rpt: ChecklistRPTID): ChecklistVID[] => {
@@ -598,6 +627,10 @@ const getVIDValueMapSummary = (vidName: string): string[] => {
   return maps.map(vm => `${vm.key}→${vm.value}`)
 }
 const getRPTIDVIDNames = (row: ChecklistRPTID): string[] => {
+  if (!row.links) return []
+  return row.links.split(',').map(s => s.trim()).filter(Boolean)
+}
+const getCEIDReportNames = (row: ChecklistCEID): string[] => {
   if (!row.links) return []
   return row.links.split(',').map(s => s.trim()).filter(Boolean)
 }
@@ -675,7 +708,10 @@ const handleTabChange = (tab: string | number) => {
 }
 
 // ---- CEID ----
-const selectCEID = (c: ChecklistCEID) => { selectedCEID.value = c }
+const selectCEID = (c: ChecklistCEID) => {
+  selectedCEID.value = c
+  selectedCEIDAddReport.value = ''
+}
 const handleAddCEID = () => {
   ceidDrawerIsEdit.value = false
   Object.assign(ceidFormData, { id: null, ceid: 0, name: '', linkItems: [], handler: '', require: false, description: '' })
@@ -717,6 +753,47 @@ const handleDeleteCEID = (row: ChecklistCEID) => {
     if (selectedCEID.value?.id === row.id) selectedCEID.value = null
     loadCEIDs()
   }).catch(() => {})
+}
+const updateCEIDLinks = async (row: ChecklistCEID, reportNames: string[]) => {
+  const newLinks = reportNames.join(',')
+  await checklistApi.updateCEID(checklistId, row.id, {
+    ceid: row.ceid,
+    name: row.name,
+    links: newLinks,
+    handler: row.handler,
+    require: row.require,
+    description: row.description,
+  })
+  row.links = newLinks
+  const idx = ceids.value.findIndex(c => c.id === row.id)
+  if (idx >= 0) ceids.value[idx] = { ...ceids.value[idx], links: newLinks }
+  if (selectedCEID.value?.id === row.id) selectedCEID.value = { ...row, links: newLinks }
+}
+const addReportToSelectedCEID = async (reportName: string) => {
+  if (!selectedCEID.value || !reportName) return
+  const current = getCEIDReportNames(selectedCEID.value)
+  if (current.includes(reportName)) {
+    selectedCEIDAddReport.value = ''
+    return
+  }
+  try {
+    await updateCEIDLinks(selectedCEID.value, [...current, reportName])
+    selectedCEIDAddReport.value = ''
+    ElMessage.success('Report added')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.error || 'Failed to add report')
+  }
+}
+const removeReportFromSelectedCEID = async (rpt: ChecklistRPTID) => {
+  if (!selectedCEID.value) return
+  const current = getCEIDReportNames(selectedCEID.value)
+  const next = current.filter(name => name !== rpt.name)
+  try {
+    await updateCEIDLinks(selectedCEID.value, next)
+    ElMessage.success('Report removed')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.error || 'Failed to remove report')
+  }
 }
 
 // ---- VID ----
@@ -1053,8 +1130,11 @@ watch(ceids, () => {
 .field-label { color: #909399; font-size: 12px; }
 .field-value { font-weight: 500; font-size: 13px; }
 .ceid-desc { color: #606266; font-size: 13px; margin-top: 8px; }
+.report-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 10px; padding-top: 12px; border-top: 1px solid #ebeef5; }
+.report-title { font-size: 13px; font-weight: 600; color: #606266; }
 .report-card { border: 1px solid #ebeef5; border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
-.report-header { background: #fafafa; padding: 6px 10px; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.report-header { background: #fafafa; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+.report-header-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .report-name { font-weight: 500; }
 .vid-table { width: 100%; font-size: 12px; border-collapse: collapse; }
 .vid-table th { background: #f5f7fa; padding: 4px 8px; text-align: left; color: #909399; font-weight: normal; border-bottom: 1px solid #ebeef5; }

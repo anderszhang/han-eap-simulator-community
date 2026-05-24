@@ -33,6 +33,10 @@ export const checklistApi = {
     })
   },
 
+  exportExcel(id: number): Promise<any> {
+    return api.get(`/checklist/${id}/export`, { responseType: 'blob' })
+  },
+
   getEngines(id: number): Promise<any> {
     return api.get(`/checklist/${id}/engines`)
   },

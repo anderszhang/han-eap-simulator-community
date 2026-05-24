@@ -2,11 +2,7 @@
   <el-container class="main-layout">
     <el-aside :width="isCollapsed ? '64px' : '200px'" class="sidebar">
       <div class="logo">
-        <svg v-if="isCollapsed" class="logo-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/>
-          <line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
+        <img v-if="isCollapsed" class="logo-icon" src="/icon.svg" :alt="`${APP_INFO.name} logo`" />
         <template v-else>
           <div class="logo-title">HH EAP Simulator</div>
           <div class="logo-subtitle">Equipment Automation</div>
@@ -131,11 +127,7 @@
     <el-dialog v-model="showAboutDialog" :title="`About ${APP_INFO.name}`" width="460px">
       <div class="about-content">
         <div class="about-brand">
-          <svg class="about-logo" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--eap-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-            <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
-          </svg>
+          <img class="about-logo" src="/icon.svg" :alt="`${APP_INFO.name} logo`" />
           <h3>{{ APP_INFO.name }}</h3>
         </div>
         <p class="about-desc">{{ APP_INFO.description }}</p>
@@ -294,7 +286,10 @@ onMounted(() => {
 }
 
 .logo-icon {
-  color: var(--eap-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.18));
 }
 
 .logo-title {
@@ -526,7 +521,10 @@ onMounted(() => {
 }
 
 .about-logo {
-  color: var(--eap-primary);
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  filter: drop-shadow(0 8px 18px rgba(20, 45, 85, 0.14));
 }
 
 .about-content h3 {

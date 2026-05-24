@@ -328,6 +328,7 @@ export interface FlowFunctionRequest {
 export interface Checklist {
   id: number
   name: string
+  vendorId?: number | null
   vendor: string
   model: string
   description: string
@@ -349,6 +350,7 @@ export interface Checklist {
 
 export interface ChecklistRequest {
   name: string
+  vendorId?: number | null
   vendor: string
   model: string
   description: string
