@@ -1,24 +1,54 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="HH EAP Simulator icon">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="100%" stop-color="#1e293b"/>
+    <linearGradient id="chip" x1="86" y1="64" x2="426" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#102a37"/>
+      <stop offset="0.52" stop-color="#0d1822"/>
+      <stop offset="1" stop-color="#071117"/>
     </linearGradient>
+    <linearGradient id="trace" x1="132" y1="140" x2="384" y2="372" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#73f3ff"/>
+      <stop offset="1" stop-color="#58f0a5"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.38 0 0 0 0 0.96 0 0 0 0 0.75 0 0 0 0.55 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <rect x="40" y="40" width="432" height="432" rx="85" fill="url(#bg)"/>
-  <rect x="42" y="42" width="428" height="428" rx="84" fill="none" stroke="#334155" stroke-width="2" opacity="0.5"/>
-  <circle cx="256" cy="256" r="18" fill="#409EFF"/>
-  <circle cx="262" cy="250" r="6" fill="white" opacity="0.3"/>
-  <rect x="251" y="158" width="10" height="80" fill="#409EFF" rx="5"/>
-  <rect x="251" y="274" width="10" height="80" fill="#409EFF" rx="5"/>
-  <rect x="158" y="251" width="80" height="10" fill="#409EFF" rx="5"/>
-  <rect x="274" y="251" width="80" height="10" fill="#409EFF" rx="5"/>
-  <circle cx="256" cy="158" r="10" fill="#60a5fa"/>
-  <circle cx="256" cy="354" r="10" fill="#60a5fa"/>
-  <circle cx="158" cy="256" r="10" fill="#60a5fa"/>
-  <circle cx="354" cy="256" r="10" fill="#60a5fa"/>
-  <path d="M 98 98 A 60 60 0 0 1 158 158" fill="none" stroke="#409EFF" stroke-width="4" opacity="0.4"/>
-  <path d="M 354 98 A 60 60 0 0 1 414 158" fill="none" stroke="#409EFF" stroke-width="4" opacity="0.4"/>
-  <path d="M 98 354 A 60 60 0 0 0 158 414" fill="none" stroke="#409EFF" stroke-width="4" opacity="0.4"/>
-  <path d="M 354 414 A 60 60 0 0 0 414 354" fill="none" stroke="#409EFF" stroke-width="4" opacity="0.4"/>
+
+  <rect width="512" height="512" rx="112" fill="#eef8f6"/>
+  <rect x="58" y="58" width="396" height="396" rx="86" fill="url(#chip)"/>
+  <rect x="74" y="74" width="364" height="364" rx="72" fill="none" stroke="#244653" stroke-width="5"/>
+
+  <g stroke="#0d1822" stroke-width="13" stroke-linecap="round">
+    <path d="M128 36v38M184 36v38M240 36v38M296 36v38M352 36v38M408 36v38"/>
+    <path d="M128 438v38M184 438v38M240 438v38M296 438v38M352 438v38M408 438v38"/>
+    <path d="M36 128h38M36 184h38M36 240h38M36 296h38M36 352h38M36 408h38"/>
+    <path d="M438 128h38M438 184h38M438 240h38M438 296h38M438 352h38M438 408h38"/>
+  </g>
+
+  <g fill="none" stroke="url(#trace)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" filter="url(#softGlow)">
+    <path d="M150 156v200"/>
+    <path d="M236 156v200"/>
+    <path d="M150 256h86"/>
+    <path d="M276 156v200"/>
+    <path d="M362 156v200"/>
+    <path d="M276 256h86"/>
+  </g>
+
+  <g fill="#eef8f6">
+    <circle cx="150" cy="156" r="10"/>
+    <circle cx="236" cy="356" r="10"/>
+    <circle cx="276" cy="156" r="10"/>
+    <circle cx="362" cy="356" r="10"/>
+  </g>
+
+  <g fill="#58f0a5">
+    <circle cx="256" cy="256" r="8"/>
+    <circle cx="86" cy="256" r="6"/>
+    <circle cx="426" cy="256" r="6"/>
+  </g>
 </svg>
