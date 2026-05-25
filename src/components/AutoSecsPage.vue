@@ -264,6 +264,7 @@ import '@vue-flow/controls/dist/style.css'
 import '@vue-flow/minimap/dist/style.css'
 import { engineApi } from '../api/engine'
 import { flowApi } from '../api/flow'
+import { showEquipmentAlarm } from '../utils/alarmNotification'
 import { engineWebSocketURL } from '../utils/runtimeConfig'
 import type { Flow, FlowRunStatus } from '../types'
 import FlowNode from './flow-editor/FlowNode.vue'
@@ -561,6 +562,9 @@ function connectWs() {
       if (data.type === 'log') {
         const dirLabel = data.direction === 'send' ? 'Send' : 'Receive'
         addLog(`${data.timestamp}   ${dirLabel}   ${data.content}`)
+      } else if (data.type === 'alarm') {
+        addLog(`${data.timestamp}   ALARM   ${data.content}`)
+        showEquipmentAlarm({ engineName: data.engineName, content: data.content })
       } else if (data.type === 'status') {
         addLog(`${data.timestamp}   STATUS   ${data.content}`)
         if (data.content === 'disconnected') {

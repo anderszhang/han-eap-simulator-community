@@ -200,7 +200,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onActivated, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, Search, Refresh, Download, CopyDocument, Upload, DocumentAdd, MoreFilled } from '@element-plus/icons-vue'
@@ -613,7 +613,7 @@ const handleGenerateSML = async () => {
   doGenerate(false)
 }
 
-onMounted(() => {
+const initData = () => {
   if (currentUser.value && currentUser.value.roleId !== 1) {
     searchForm.userId = currentUser.value.id
   }
@@ -621,7 +621,10 @@ onMounted(() => {
   loadVendorOptions()
   loadModelOptions()
   loadUsers()
-})
+}
+
+onMounted(initData)
+onActivated(initData)
 </script>
 
 <style scoped>

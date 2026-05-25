@@ -51,13 +51,15 @@
         <el-table-column label="Actions" width="200" fixed="right" align="center">
           <template #default="{ row }">
             <div class="row-actions">
-              <el-button text @click="handleCopy(row)" title="Copy">
-                <el-icon><CopyDocument /></el-icon>
-              </el-button>
               <template v-if="row.userId === currentUser?.id">
                 <el-button text type="primary" @click="handleEdit(row)" title="Edit">
                   <el-icon><Edit /></el-icon>
                 </el-button>
+              </template>
+              <el-button text @click="handleCopy(row)" title="Copy">
+                <el-icon><CopyDocument /></el-icon>
+              </el-button>
+              <template v-if="row.userId === currentUser?.id">
                 <el-button text type="danger" @click="handleDelete(row)" title="Delete">
                   <el-icon><Delete /></el-icon>
                 </el-button>

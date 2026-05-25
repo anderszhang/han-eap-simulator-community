@@ -91,7 +91,7 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="Actions" min-width="140" fixed="right" align="center">
+        <el-table-column label="Actions" width="160" fixed="right" align="center">
           <template #default="{ row }">
             <div class="row-actions">
               <el-button
@@ -108,12 +108,24 @@
               <el-button v-if="row.userId === currentUser?.id" text type="primary" @click="handleEdit(row)" title="Edit">
                 <el-icon><Edit /></el-icon>
               </el-button>
-              <el-button text @click="handleDownloadLogs(row)" title="Download Logs">
-                <el-icon><Download /></el-icon>
+              <el-button text @click="handleCopy(row)" title="Copy">
+                <el-icon><CopyDocument /></el-icon>
               </el-button>
-              <el-button v-if="row.userId === currentUser?.id" text type="danger" @click="handleDelete(row)" title="Delete">
-                <el-icon><Delete /></el-icon>
-              </el-button>
+              <el-dropdown trigger="click" @command="(command: string) => handleRowCommand(command, row)">
+                <el-icon><MoreFilled /></el-icon>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="download-logs">
+                      <el-icon><Download /></el-icon>
+                      Download Logs
+                    </el-dropdown-item>
+                    <el-dropdown-item v-if="row.userId === currentUser?.id" command="delete" divided>
+                      <el-icon><Delete /></el-icon>
+                      Delete
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </div>
           </template>
         </el-table-column>
@@ -172,7 +184,7 @@
           <el-input-number v-model="formData.deviceId" :min="0" :max="9999" controls-position="right" style="width: 100%" />
         </el-form-item>
 
-        <el-form-item v-if="formData.mode === 'active'" label="Checklist">
+        <el-form-item label="Checklist">
           <el-select v-model="formData.checklistId" clearable filterable placeholder="Select Checklist" style="width: 100%">
             <el-option v-for="cl in checklists" :key="cl.id" :label="cl.name" :value="cl.id" />
           </el-select>
@@ -238,9 +250,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, onActivated, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, Plus, Edit, Delete, Search, VideoPlay, VideoPause, ArrowUp, ArrowDown, Download } from '@element-plus/icons-vue'
+import { Refresh, Plus, Edit, Delete, Search, VideoPlay, VideoPause, ArrowUp, ArrowDown, Download, CopyDocument, MoreFilled } from '@element-plus/icons-vue'
 import { engineApi } from '../api/engine'
 import { checklistApi } from '../api/checklist'
 import { userApi } from '../api/user'
@@ -487,6 +499,35 @@ const handleDownloadLogs = (row: Engine) => {
   logDialogVisible.value = true
 }
 
+const handleCopy = (row: Engine) => {
+  isEdit.value = false
+  formData.id = null
+  formData.mode = row.mode
+  formData.engineName = row.engineName + ' (copy)'
+  formData.ip = row.ip
+  formData.port = row.port
+  formData.t3 = row.t3
+  formData.t5 = row.t5
+  formData.t6 = row.t6
+  formData.t7 = row.t7
+  formData.t8 = row.t8
+  formData.deviceId = row.deviceId
+  formData.description = row.description
+  formData.checklistId = row.checklistId || null
+  dialogVisible.value = true
+}
+
+const handleRowCommand = (command: string, row: Engine) => {
+  switch (command) {
+    case 'download-logs':
+      handleDownloadLogs(row)
+      break
+    case 'delete':
+      handleDelete(row)
+      break
+  }
+}
+
 const isActive = (status?: string) => status === 'running' || status === 'connected'
 
 const handleStartStop = async (row: Engine) => {
@@ -541,7 +582,7 @@ const handleSubmit = async () => {
     const requestData = {
       mode: formData.mode,
       engineName: formData.engineName,
-      ip: formData.mode === 'active' ? formData.ip : '',
+      ip: formData.ip,
       port: formData.port,
       t3: formData.t3,
       t5: formData.t5,
@@ -550,7 +591,7 @@ const handleSubmit = async () => {
       t8: formData.t8,
       deviceId: formData.deviceId,
       description: formData.description,
-      checklistId: formData.mode === 'active' ? formData.checklistId : null
+      checklistId: formData.checklistId
     }
     
     if (isEdit.value) {
@@ -584,7 +625,6 @@ const handleDialogClose = () => {
 watch(() => formData.mode, (newMode) => {
   if (newMode === 'passive') {
     formData.ip = ''
-    formData.checklistId = null
   }
 })
 
@@ -596,15 +636,17 @@ const loadChecklists = async () => {
   } catch { /* ignore */ }
 }
 
-// Initialize data
-onMounted(() => {
+const initData = () => {
   if (currentUser.value && currentUser.value.roleId !== 1) {
     searchForm.userId = currentUser.value.id
   }
   filterData()
   loadChecklists()
   loadUsers()
-})
+}
+
+onMounted(initData)
+onActivated(initData)
 </script>
 
 <style scoped>

@@ -1,6 +1,7 @@
 import { ref, onUnmounted } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 
+import { showEquipmentAlarm } from '../utils/alarmNotification'
 import { engineWebSocketURL } from '../utils/runtimeConfig'
 
 export interface EngineConnectionCallbacks {
@@ -56,15 +57,18 @@ export function useWebSocket(callbacks?: EngineConnectionCallbacks) {
           const data: WSMessage = JSON.parse(event.data)
           if (data.type === 'log') {
             const dirLabel = data.direction === 'send' ? 'Send' : 'Receive'
-            const timeOnly = data.timestamp.split(' ')[1] || data.timestamp
             const engineLabel = data.engineName ? `[${data.engineName}] ` : ''
-            const formattedMessage = `${timeOnly} ${engineLabel}${dirLabel} ${data.content}`
+            const formattedMessage = `${data.timestamp} ${engineLabel}${dirLabel} ${data.content}`
             callbacks?.onMessage?.(engine.id, formattedMessage)
+          } else if (data.type === 'alarm') {
+            const engineLabel = data.engineName ? `[${data.engineName}] ` : ''
+            const formattedMessage = `${data.timestamp} ${engineLabel}ALARM ${data.content}`
+            callbacks?.onMessage?.(engine.id, formattedMessage)
+            showEquipmentAlarm({ engineName: data.engineName, content: data.content })
           } else if (data.type === 'status') {
             callbacks?.onStatus?.(data.engineId, data.content)
             if (data.engineId === engine.id) {
-              const timeOnly = data.timestamp.split(' ')[1] || data.timestamp
-              callbacks?.onMessage?.(engine.id, `${timeOnly} STATUS ${data.content}`)
+              callbacks?.onMessage?.(engine.id, `${data.timestamp} STATUS ${data.content}`)
             }
           } else if (data.type === 'vars') {
             callbacks?.onVars?.(engine.id, data.vars ?? {})
