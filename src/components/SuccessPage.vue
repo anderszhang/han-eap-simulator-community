@@ -41,7 +41,7 @@
           </div>
           <div class="info-card">
             <div class="info-title">版本</div>
-            <div class="info-value">v1.0.0</div>
+            <div class="info-value">v{{ appVersion }}</div>
           </div>
         </div>
       </div>
@@ -61,8 +61,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { loadAppVersion, useAppVersion } from '../utils/appVersion'
 
 const router = useRouter()
+const { appVersion } = useAppVersion()
 
 const user = ref(null)
 const uptime = ref('0 分钟')
@@ -96,6 +98,7 @@ onMounted(() => {
   // Update uptime every minute
   updateUptime()
   setInterval(updateUptime, 60000)
+  loadAppVersion()
 })
 </script>
 

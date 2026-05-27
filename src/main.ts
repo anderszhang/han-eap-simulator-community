@@ -19,6 +19,7 @@ import RoleManagement from './components/RoleManagement.vue'
 import ChecklistPage from './components/ChecklistPage.vue'
 import ChecklistDetailPage from './components/ChecklistDetailPage.vue'
 import VendorModelPage from './components/VendorModelPage.vue'
+import DatabaseAdminPage from './components/DatabaseAdminPage.vue'
 
 const routes = [
   { path: '/', component: LoginPage },
@@ -37,7 +38,8 @@ const routes = [
       { path: 'auto-secs', component: AutoSecsPage },
       { path: 'checklist', component: ChecklistPage, meta: { keepAlive: true } },
       { path: 'checklist/:id/edit', component: ChecklistDetailPage },
-      { path: 'vendors', component: VendorModelPage, meta: { keepAlive: true } }
+      { path: 'vendors', component: VendorModelPage, meta: { keepAlive: true } },
+      { path: 'db-admin', component: DatabaseAdminPage, meta: { keepAlive: true } }
     ]
   }
 ]
@@ -63,6 +65,16 @@ router.beforeEach((to, _from, next) => {
   }
 
   if (to.path === '/roles') {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      const user = JSON.parse(userData)
+      if (user.roleId !== 1) {
+        next('/engine')
+        return
+      }
+    }
+  }
+  if (to.path === '/db-admin') {
     const userData = localStorage.getItem('user')
     if (userData) {
       const user = JSON.parse(userData)

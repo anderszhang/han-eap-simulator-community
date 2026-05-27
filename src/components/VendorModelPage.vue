@@ -61,12 +61,12 @@
         <div class="right-panel">
           <template v-if="selectedVendor">
             <div class="panel-header">
-              <span class="panel-title">{{ selectedVendor.name }} — Equipment Models</span>
+              <span class="panel-title">{{ selectedVendor.name }} — EQP Models</span>
               <div class="header-actions">
                 <el-button size="small" circle @click="handleEditVendor(selectedVendor)" title="Edit vendor">
                   <el-icon><Edit /></el-icon>
                 </el-button>
-                <el-button size="small" circle @click="handleAddModel" title="Add model">
+                <el-button size="small" circle @click="handleAddModel" title="Add EQP Model">
                   <el-icon><Plus /></el-icon>
                 </el-button>
               </div>
@@ -86,7 +86,7 @@
             </div>
 
             <div class="model-filters">
-              <el-input v-model="modelSearchName" placeholder="Filter model name" clearable size="small" class="model-filter-item" />
+              <el-input v-model="modelSearchName" placeholder="Filter EQP Model" clearable size="small" class="model-filter-item" />
               <el-select v-model="modelSearchCategory" placeholder="All categories" clearable filterable allow-create default-first-option size="small" class="model-filter-item">
                 <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
               </el-select>
@@ -100,7 +100,7 @@
               <el-table-column label="Actions" min-width="120" fixed="right" align="center">
                 <template #default="{ row }">
                   <div class="row-actions">
-                    <el-button text type="primary" @click="handleEditModel(row)" title="Edit">
+                    <el-button text type="primary" @click="handleEditModel(row)" title="Edit EQP Model">
                       <el-icon><Edit /></el-icon>
                     </el-button>
                     <el-button text type="danger" @click="handleDeleteModel(row)" title="Delete">
@@ -147,15 +147,15 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="modelDialogVisible" :title="isEditModel ? 'Edit Model' : 'Add Model'" width="480px" :destroy-on-close="true">
-      <el-form ref="modelFormRef" :model="modelForm" :rules="modelRules" label-width="90px">
+    <el-dialog v-model="modelDialogVisible" :title="isEditModel ? 'Edit EQP Model' : 'Add EQP Model'" width="480px" :destroy-on-close="true">
+      <el-form ref="modelFormRef" :model="modelForm" :rules="modelRules" label-width="120px">
         <el-form-item label="Vendor" prop="vendorId">
           <el-select v-model="modelForm.vendorId" placeholder="Select vendor" filterable style="width: 100%">
             <el-option v-for="v in vendors" :key="v.id" :label="v.name" :value="v.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Name" prop="name">
-          <el-input v-model="modelForm.name" placeholder="Model name" maxlength="100" />
+        <el-form-item label="EQP Model" prop="name">
+          <el-input v-model="modelForm.name" placeholder="EQP Model" maxlength="100" />
         </el-form-item>
         <el-form-item label="Category" prop="category">
           <el-select v-model="modelForm.category" placeholder="Select or type category" filterable allow-create default-first-option style="width: 100%">
@@ -282,7 +282,7 @@ const mergeForm = reactive({
 })
 
 const vendorRules = {
-  name: [{ required: true, message: 'Name is required', trigger: 'blur' }],
+  name: [{ required: true, message: 'EQP Model is required', trigger: 'blur' }],
   englishName: [{ pattern: /^[A-Za-z0-9 .,&()\-_/]*$/, message: 'English name supports letters/numbers/common symbols', trigger: 'blur' }],
   website: [{ pattern: /^$|^https?:\/\/\S+$/i, message: 'Website must start with http:// or https://', trigger: 'blur' }],
 }

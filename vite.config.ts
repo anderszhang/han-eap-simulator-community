@@ -5,9 +5,6 @@ import { resolve } from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || 'dev'),
-  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -17,7 +14,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         ws: true,
       },

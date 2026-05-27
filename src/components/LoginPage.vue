@@ -122,13 +122,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../utils/api'
 import type { LoginForm } from '../types'
+import { loadAppVersion, useAppVersion } from '../utils/appVersion'
 
 const router = useRouter()
-const appVersion = __APP_VERSION__
+const { appVersion } = useAppVersion()
 
 const loginForm = ref<LoginForm>({
   username: '',
@@ -209,6 +210,10 @@ const handleRegister = async (): Promise<void> => {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  loadAppVersion()
+})
 
 </script>
 

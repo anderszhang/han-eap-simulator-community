@@ -47,9 +47,13 @@
                <el-icon><OfficeBuilding /></el-icon>
                <span>Vendor & Model</span>
              </el-menu-item>
-            <el-menu-item v-if="user.roleId === 1" index="/roles">
+             <el-menu-item v-if="user.roleId === 1" index="/roles">
             <el-icon><User /></el-icon>
             <span>Role Management</span>
+          </el-menu-item>
+          <el-menu-item v-if="user.roleId === 1" index="/db-admin">
+            <el-icon><Coin /></el-icon>
+            <span>DB Admin</span>
           </el-menu-item>
         </el-menu>
 
@@ -166,17 +170,24 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { userApi } from '../api/user'
 import { APP_INFO } from '../config/app'
+import { loadAppVersion, useAppVersion } from '../utils/appVersion'
+import type { User as AppUser } from '../types'
 
 const showAboutDialog = ref(false)
 
 const router = useRouter()
 const route = useRoute()
-const user = ref({ username: '', roleId: 1, roleName: 'admin' })
+const user = ref<Pick<AppUser, 'username' | 'roleId' | 'roleName' | 'passwordChangeRequired'>>({
+  username: '',
+  roleId: 1,
+  roleName: 'admin',
+  passwordChangeRequired: false
+})
 const isCollapsed = ref(false)
-const appVersion = __APP_VERSION__
+const { appVersion } = useAppVersion()
 
 watch(() => route.path, (path) => {
   if (path === '/communication' || path === '/auto-secs' || path.startsWith('/flow/')) {
@@ -193,9 +204,10 @@ watch(() => route.path, (path) => {
       '/sml': 'SML',
        '/communication': 'Manual SECS',
         '/flow': 'Flow',
-        '/auto-secs': 'Auto SECS',
+      '/auto-secs': 'Auto SECS',
         '/vendors': 'Vendor & Model',
-        '/checklist': 'Checklist'
+        '/checklist': 'Checklist',
+        '/db-admin': 'Database Admin'
      }
    return titles[path] || 'HH EAP Simulator'
  }
@@ -227,9 +239,27 @@ const handleCommand = (command: string): void => {
     localStorage.removeItem('user')
     router.push('/')
   } else if (command === 'changePassword') {
-    showPwdDialog.value = true
-    pwdForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+    openPasswordDialog()
   }
+}
+
+const openPasswordDialog = () => {
+  showPwdDialog.value = true
+  pwdForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+}
+
+const promptPasswordChange = () => {
+  ElMessageBox.confirm(
+    'The admin account is still using the initial password. Please change it now.',
+    'Change Admin Password',
+    {
+      confirmButtonText: 'Change Password',
+      cancelButtonText: 'Later',
+      type: 'warning'
+    }
+  ).then(() => {
+    openPasswordDialog()
+  }).catch(() => {})
 }
 
 const handleChangePassword = async () => {
@@ -239,6 +269,8 @@ const handleChangePassword = async () => {
       oldPassword: pwdForm.value.oldPassword,
       newPassword: pwdForm.value.newPassword,
     })
+    user.value.passwordChangeRequired = false
+    localStorage.setItem('user', JSON.stringify(user.value))
     ElMessage.success('Password changed')
     showPwdDialog.value = false
   } catch (e: any) {
@@ -250,7 +282,11 @@ onMounted(() => {
   const userData = localStorage.getItem('user')
   if (userData) {
     user.value = JSON.parse(userData)
+    if (user.value.passwordChangeRequired) {
+      promptPasswordChange()
+    }
   }
+  loadAppVersion()
 })
 </script>
 

@@ -6,6 +6,7 @@ export interface User {
   roleId: number
   roleName: string
   status?: string
+  passwordChangeRequired?: boolean
 }
 
 export interface LoginForm {
@@ -525,4 +526,74 @@ export interface EquipmentModelQuery {
   name?: string
   vendorId?: number
   category?: string
+}
+
+// Database admin types
+export interface DatabaseTable {
+  name: string
+  type: 'table' | 'view' | string
+  sql: string
+  rootPage: number
+  rowCount: number
+}
+
+export interface DatabaseColumn {
+  cid: number
+  name: string
+  type: string
+  notNull: boolean
+  defaultValue?: string | null
+  primaryKey: boolean
+}
+
+export interface DatabaseForeignKey {
+  id: number
+  seq: number
+  table: string
+  from: string
+  to: string
+  onUpdate: string
+  onDelete: string
+  match: string
+}
+
+export interface DatabaseIndex {
+  seq: number
+  name: string
+  unique: boolean
+  origin: string
+  partial: boolean
+  columns: string[]
+}
+
+export interface DatabaseTableDetail {
+  name: string
+  type: string
+  sql: string
+  rowCount: number
+  columns: DatabaseColumn[]
+  foreignKeys: DatabaseForeignKey[]
+  indexes: DatabaseIndex[]
+  sampleRows: Record<string, any>[]
+}
+
+export interface DatabaseQueryRequest {
+  sql: string
+  limit?: number
+}
+
+export interface DatabaseExecuteRequest {
+  sql: string
+}
+
+export interface DatabaseQueryResult {
+  columns: string[]
+  rows: Record<string, any>[]
+  rowCount: number
+  hasMore: boolean
+}
+
+export interface DatabaseExecuteResult {
+  rowsAffected: number
+  lastInsertId: number
 }
