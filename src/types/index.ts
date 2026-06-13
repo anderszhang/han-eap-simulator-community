@@ -199,6 +199,8 @@ export interface Flow {
   stepInterval: number
   commMode: 'active' | 'passive'
   published: boolean
+  edges?: string
+  constantVariables?: string
   userId: number
   username: string
   createTime: string
@@ -262,6 +264,16 @@ export interface ComputedVariable {
   params?: Record<string, string>
 }
 
+export interface FlowConstantVariable {
+  name: string
+  type: 'string' | 'number' | 'boolean' | 'json'
+  required: boolean
+  defaultValue: string
+  value?: string
+  overridable: boolean
+  description?: string
+}
+
 export interface VariableDef {
   name: string
   function: string
@@ -273,6 +285,8 @@ export interface FlowRequest {
   description: string
   stepInterval: number
   commMode: 'active' | 'passive'
+  edges?: string
+  constantVariables?: string
   steps: { type: string; name: string; config: string }[]
 }
 

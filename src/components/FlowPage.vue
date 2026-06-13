@@ -240,7 +240,7 @@ const editPropsId = ref(0)
 const tableData = ref<Flow[]>([])
 const searchForm = reactive({ name: '', userId: null as number | null })
 const pagination = reactive({ currentPage: 1, pageSize: 10, total: 0 })
-const copySource = ref<{ steps: any[]; edges: string } | null>(null)
+const copySource = ref<{ steps: any[]; edges: string; constantVariables: string } | null>(null)
 const dialogTitle = computed(() => dialogMode.value === 'copy' ? 'Copy Flow' : 'Add Flow')
 
 // ===== Template Tab =====
@@ -372,6 +372,7 @@ const handleCreate = async () => {
       description: formData.description,
       stepInterval: formData.stepInterval,
       commMode: formData.commMode,
+      constantVariables: '[]',
       steps: [{ type: 'send', name: 'Send step', config: '{"sml":""}' }],
     }
     if (dialogMode.value === 'copy' && copySource.value) {
@@ -381,6 +382,7 @@ const handleCreate = async () => {
         stepInterval: formData.stepInterval,
         commMode: formData.commMode,
         edges: copySource.value.edges,
+        constantVariables: copySource.value.constantVariables,
         steps: copySource.value.steps,
       }
     } else if (formData.templateId) {
@@ -394,6 +396,7 @@ const handleCreate = async () => {
           stepInterval: formData.stepInterval,
           commMode: formData.commMode,
           edges: t.edges || '',
+          constantVariables: '[]',
           steps: Array.isArray(steps) ? steps : [{ type: 'send', name: 'Send step', config: '{"sml":""}' }],
         }
       }
@@ -442,6 +445,8 @@ const handleSaveProps = async () => {
       description: editPropsData.description,
       stepInterval: editPropsData.stepInterval,
       commMode: editPropsData.commMode,
+      edges: flow?.edges || '',
+      constantVariables: flow?.constantVariables || '[]',
       steps: (flow?.steps || []).map((s: any) => ({
         type: s.type,
         name: s.name,
@@ -470,6 +475,7 @@ const handleCopy = async (row: Flow) => {
     copySource.value = {
       steps,
       edges: flow?.edges || '',
+      constantVariables: flow?.constantVariables || '[]',
     }
     formData.name = row.name + ' (copy)'
     formData.description = row.description || ''
@@ -509,6 +515,7 @@ const handleUseTemplate = async (row: FlowTemplate) => {
       stepInterval: t.stepInterval || 1000,
       commMode: t.commMode || 'active',
       edges: t.edges || '',
+      constantVariables: '[]',
       steps: Array.isArray(steps) ? steps : [{ type: 'send', name: 'Send step', config: '{"sml":""}' }],
     })
     const id = createResp.data?.data?.id

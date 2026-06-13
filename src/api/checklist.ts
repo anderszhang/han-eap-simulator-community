@@ -117,7 +117,7 @@ export const checklistApi = {
     return api.post(`/checklist/${id}/generate-sml`, data)
   },
 
-  generateFlow(id: number, data: { templateId: number; flowName: string; folderName?: string; sourceFolder?: string; force?: boolean; publish?: boolean }): Promise<any> {
+  generateFlow(id: number, data: { templateId: number; flowName: string; folderName?: string; sourceFolder?: string; smlMode?: 'generate' | 'existing'; force?: boolean; publish?: boolean }): Promise<any> {
     return api.post(`/checklist/${id}/generate-flow`, data)
   }
 }

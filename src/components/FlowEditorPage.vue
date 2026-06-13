@@ -470,9 +470,31 @@
               </el-form>
             </div>
           </div>
-          <div v-else class="props-empty">
-            <el-icon :size="32" color="#dcdfe6"><InfoFilled /></el-icon>
-            <p>Select a node to edit properties</p>
+          <div v-else class="props-content flow-props-panel">
+            <div class="flow-props-section">
+              <div class="variables-section-title">
+                <span>Flow Variables</span>
+                <div class="header-actions">
+                  <el-tag size="small" effect="plain">{{ constantVariables.length }}</el-tag>
+                  <el-button type="primary" :icon="Plus" size="small" @click="addConstantVariable">Add</el-button>
+                </div>
+              </div>
+              <div v-if="constantVariables.length === 0" class="variables-empty">
+                Declare variables this flow needs before execution, such as <code>{LotID}</code>.
+              </div>
+              <div v-for="(v, idx) in constantVariables" :key="idx" class="constant-var-card">
+                <div class="constant-var-row">
+                  <el-input v-model="v.name" placeholder="Name" size="small" class="constant-var-name-input" />
+                  <el-button text type="danger" :icon="Delete" size="small" @click="removeConstantVariable(idx)" />
+                </div>
+                <div class="constant-var-row">
+                  <el-input v-model="v.defaultValue" placeholder="Default value" size="small" />
+                </div>
+                <div class="constant-var-row meta-row">
+                  <el-checkbox v-model="v.required" size="small">Required</el-checkbox>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -646,7 +668,7 @@ import { flowTemplateApi } from '../api/flow-template'
 import { engineApi } from '../api/engine'
 import { smlApi } from '../api/sml'
 import { flowFunctionApi } from '../api/flow-function'
-import type { FlowStepConfig, FlowFunction } from '../types'
+import type { FlowStepConfig, FlowFunction, FlowConstantVariable } from '../types'
 import FlowNode from './flow-editor/FlowNode.vue'
 import ReceiveProperties from './flow-editor/ReceiveProperties.vue'
 import * as monaco from 'monaco-editor'
@@ -682,6 +704,7 @@ const flowName = ref('')
 const flowDescription = ref('')
 const stepInterval = ref(1000)
 const commMode = ref<'active' | 'passive'>('active')
+const constantVariables = ref<FlowConstantVariable[]>([])
 const saving = ref(false)
 const publishing = ref(false)
 const isDirty = ref(false)
@@ -902,6 +925,71 @@ const stepTypes = [
   { type: 'delay', label: 'Delay', desc: 'Wait time', color: '#909399', icon: Clock },
 ]
 
+function parseConstantVariables(raw: unknown): FlowConstantVariable[] {
+  if (!raw) return []
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (!Array.isArray(parsed)) return []
+    return parsed.map(item => ({
+      name: String(item?.name || ''),
+      type: ['string', 'number', 'boolean', 'json'].includes(item?.type) ? item.type : 'string',
+      required: !!item?.required,
+      defaultValue: String(item?.defaultValue ?? item?.value ?? ''),
+      overridable: item?.overridable !== false,
+      description: String(item?.description || ''),
+    }))
+  } catch {
+    return []
+  }
+}
+
+function addConstantVariable() {
+  constantVariables.value.push({
+    name: '',
+    type: 'string',
+    required: true,
+    defaultValue: '',
+    overridable: true,
+    description: '',
+  })
+}
+
+function removeConstantVariable(index: number) {
+  constantVariables.value.splice(index, 1)
+}
+
+function validateConstantVariables(): boolean {
+  const names = new Set<string>()
+  for (const v of constantVariables.value) {
+    v.name = v.name.trim()
+    if (!v.name) {
+      ElMessage.warning('Flow variable name is required')
+      return false
+    }
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(v.name)) {
+      ElMessage.warning(`Invalid variable name: ${v.name}`)
+      return false
+    }
+    if (names.has(v.name)) {
+      ElMessage.warning(`Duplicate flow variable: ${v.name}`)
+      return false
+    }
+    names.add(v.name)
+  }
+  return true
+}
+
+function serializeConstantVariables(): string {
+  return JSON.stringify(constantVariables.value.map(v => ({
+    name: v.name.trim(),
+    type: 'string',
+    required: !!v.required,
+    defaultValue: String(v.defaultValue ?? ''),
+    overridable: true,
+    description: '',
+  })))
+}
+
 // ===== Selected Node =====
 const selectedNode = ref<GraphNode | null>(null)
 const selectedEdgeId = ref<string | null>(null)
@@ -960,6 +1048,7 @@ const editorSignature = computed(() => JSON.stringify({
   description: flowDescription.value,
   stepInterval: stepInterval.value,
   commMode: commMode.value,
+  constantVariables: constantVariables.value,
   graph: captureGraphSnapshot(),
 }))
 const graphSignature = computed(() => graphSnapshotKey(captureGraphSnapshot()))
@@ -1429,6 +1518,7 @@ function restoreSmlFolder(smlId: number) {
 
 function onPaneClick() {
   selectedNode.value = null
+  rightSidebarExpanded.value = true
   clearSelectedEdge()
 }
 
@@ -1924,6 +2014,7 @@ async function loadFlow(id: number) {
     flowDescription.value = flow.description || ''
     stepInterval.value = flow.stepInterval || 0
     commMode.value = flow.commMode || 'active'
+    constantVariables.value = parseConstantVariables(flow.constantVariables)
     isPublished.value = !!flow.published
     isDirty.value = false
 
@@ -2044,6 +2135,9 @@ async function handleSave() {
     ElMessage.warning('Add at least one step')
     return
   }
+  if (!validateConstantVariables()) {
+    return
+  }
 
   const names = nodes.value.map(n => (n.data?.name || '').trim()).filter(Boolean)
   const dupes = names.filter((n, i) => names.indexOf(n) !== i)
@@ -2100,6 +2194,7 @@ async function handleSave() {
           n.id, { x: n.position.x, y: n.position.y },
         ])),
       }),
+      constantVariables: serializeConstantVariables(),
       steps,
     }
 
@@ -2275,6 +2370,7 @@ onMounted(async () => {
     await loadFlow(Number(id))
   } else {
     flowName.value = 'New Flow'
+    constantVariables.value = []
     nodes.value = []
     resetGraphHistory()
   }
@@ -2566,6 +2662,78 @@ onUnmounted(() => {
   gap: 6px;
 }
 
+.variables-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #606266;
+}
+
+.variables-section-title .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flow-props-section {
+  margin-bottom: 18px;
+}
+
+.flow-props-panel .variables-section-title {
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.flow-props-panel .variables-section-title .header-actions {
+  flex-shrink: 0;
+}
+
+.variables-empty {
+  padding: 10px;
+  border: 1px dashed #dcdfe6;
+  border-radius: 6px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
+  background: #fafafa;
+}
+
+.constant-var-card {
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.constant-var-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.constant-var-row:last-child {
+  margin-bottom: 0;
+}
+
+.constant-var-row.meta-row {
+  align-items: center;
+}
+
+.constant-var-row.meta-row :deep(.el-checkbox) {
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+.constant-var-name-input {
+  flex: 1;
+  min-width: 0;
+}
+
 .component-item {
   display: flex;
   align-items: center;
@@ -2713,20 +2881,6 @@ onUnmounted(() => {
   border: 1px solid #dcdfe6;
   border-radius: 4px;
   overflow: hidden;
-}
-
-.props-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #c0c4cc;
-}
-
-.props-empty p {
-  margin-top: 8px;
-  font-size: 13px;
 }
 
 .function-list {

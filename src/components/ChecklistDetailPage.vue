@@ -349,16 +349,32 @@
         <el-form-item label="Flow Name">
           <el-input v-model="flowName" placeholder="Generated flow name" maxlength="100" />
         </el-form-item>
-        <el-form-item label="Source Folder">
+        <el-form-item label="SML Source">
+          <el-radio-group v-model="flowSMLMode">
+            <el-radio-button label="existing">Use Existing Folder</el-radio-button>
+            <el-radio-button label="generate">Generate New Folder</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="flowSMLMode === 'generate'" label="Source Folder">
           <el-select v-model="flowSourceFolder" filterable placeholder="Select source folder" style="width: 100%">
             <el-option v-for="s in smlRootFolders" :key="s" :label="s" :value="s" />
           </el-select>
         </el-form-item>
-        <el-form-item label="SML Folder">
+        <el-form-item v-if="flowSMLMode === 'existing'" label="SML Folder">
+          <el-select v-model="flowFolderName" filterable placeholder="Select existing SML folder" style="width: 100%">
+            <el-option v-for="s in smlRootFolders" :key="s" :label="s" :value="s" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-else label="Target Folder">
           <el-input v-model="flowFolderName" placeholder="Generated SML folder name" maxlength="100" />
+          <div v-if="flowTargetFolderExists && !flowForce" class="form-tip warning">
+            Folder already exists. Switch to Use Existing Folder or enable overwrite.
+          </div>
+        </el-form-item>
+        <el-form-item v-if="flowSMLMode === 'generate'" label="Generate Options">
+          <el-checkbox v-model="flowForce">Overwrite SML folder</el-checkbox>
         </el-form-item>
         <el-form-item label="Options">
-          <el-checkbox v-model="flowForce">Overwrite SML folder</el-checkbox>
           <el-checkbox v-model="flowPublish">Publish flow after generation</el-checkbox>
         </el-form-item>
       </el-form>
@@ -559,9 +575,17 @@ const flowTemplateId = ref<number | null>(null)
 const flowName = ref('')
 const flowFolderName = ref('')
 const flowSourceFolder = ref('SML demo')
+const flowSMLMode = ref<'generate' | 'existing'>('existing')
 const flowForce = ref(false)
 const flowPublish = ref(false)
 const flowGenerating = ref(false)
+const flowTargetFolderExists = computed(() => smlRootFolders.value.includes(flowFolderName.value.trim()))
+
+watch(flowSMLMode, (mode) => {
+  if (mode === 'existing') {
+    flowForce.value = false
+  }
+})
 
 const showBatchVIDDialog = ref(false)
 const batchVIDText = ref('')
@@ -992,12 +1016,16 @@ const loadFlowTemplates = async () => {
 
 const handleOpenGenerateFlow = () => {
   const baseName = checklist.value.name || `Checklist ${checklistId}`
+  const defaultFolder = `${baseName} SML`
   flowName.value = `${baseName} Flow`
-  flowFolderName.value = `${baseName} SML`
+  flowFolderName.value = defaultFolder
   flowSourceFolder.value = 'SML demo'
+  flowSMLMode.value = smlRootFolders.value.includes(defaultFolder) ? 'existing' : 'generate'
   flowForce.value = false
   flowPublish.value = false
-  loadSMLRootFolders()
+  loadSMLRootFolders().then(() => {
+    flowSMLMode.value = smlRootFolders.value.includes(defaultFolder) ? 'existing' : 'generate'
+  })
   loadFlowTemplates()
   flowDialogVisible.value = true
 }
@@ -1008,6 +1036,14 @@ const handleGenerateFlow = async () => {
   const targetFolderName = flowFolderName.value.trim()
   if (!targetFlowName) { ElMessage.warning('Flow name is required'); return }
   if (!targetFolderName) { ElMessage.warning('SML folder name is required'); return }
+  if (flowSMLMode.value === 'existing' && !smlRootFolders.value.includes(targetFolderName)) {
+    ElMessage.warning('Select an existing SML folder')
+    return
+  }
+  if (flowSMLMode.value === 'generate' && smlRootFolders.value.includes(targetFolderName) && !flowForce.value) {
+    ElMessage.warning('Folder already exists. Use Existing Folder or enable overwrite.')
+    return
+  }
 
   flowGenerating.value = true
   try {
@@ -1015,8 +1051,9 @@ const handleGenerateFlow = async () => {
       templateId: flowTemplateId.value,
       flowName: targetFlowName,
       folderName: targetFolderName,
-      sourceFolder: flowSourceFolder.value,
-      force: flowForce.value,
+      sourceFolder: flowSMLMode.value === 'generate' ? flowSourceFolder.value : undefined,
+      smlMode: flowSMLMode.value,
+      force: flowSMLMode.value === 'generate' ? flowForce.value : false,
       publish: flowPublish.value,
     })
     const result = resp.data?.data || {}
@@ -1025,8 +1062,9 @@ const handleGenerateFlow = async () => {
     const warningText = Array.isArray(result.warnings) && result.warnings.length
       ? `\n\nWarnings:\n${result.warnings.join('\n')}`
       : ''
+    const sourceText = result.smlMode === 'existing' ? 'Used existing SML folder' : 'Generated SML folder'
     ElMessageBox.confirm(
-      `Flow "${targetFlowName}" generated. Bound ${result.boundSteps || 0}/${result.totalSteps || 0} steps.${warningText}`,
+      `Flow "${targetFlowName}" generated. ${sourceText}: "${result.folderName || targetFolderName}". Bound ${result.boundSteps || 0}/${result.totalSteps || 0} steps.${warningText}`,
       'Flow Generated',
       { confirmButtonText: 'Open Flow', cancelButtonText: 'Close', type: result.warnings?.length ? 'warning' : 'success' }
     ).then(() => {
@@ -1107,6 +1145,8 @@ watch(ceids, () => {
 .tab-badge :deep(.el-badge__content) { top: -2px; }
 .tab-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; gap: 8px; }
 .empty-hint { color: #909399; text-align: center; padding: 20px 0; font-size: 13px; }
+.form-tip { margin-top: 6px; font-size: 12px; line-height: 1.4; }
+.form-tip.warning { color: #e6a23c; }
 
 /* CEID Layout */
 .ceid-layout { display: flex; height: calc(100vh - 270px); min-height: 300px; border: 1px solid #e4e7ed; border-radius: 6px; overflow: hidden; }

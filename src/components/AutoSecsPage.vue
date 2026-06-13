@@ -112,10 +112,10 @@
               <el-button
                 size="small"
                 :disabled="flowRunning || flowStarting"
-                @click="initialVariablesVisible = true"
+                @click="openInitialVariablesDialog"
               >
                 <el-icon><Setting /></el-icon>
-                Initial Variables
+                Flow Variables
                 <el-tag v-if="initialVariablesCount" size="small" type="info" effect="plain" class="vars-count">
                   {{ initialVariablesCount }}
                 </el-tag>
@@ -214,22 +214,30 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="initialVariablesVisible" title="Initial Variables" width="460px" :destroy-on-close="false">
-      <el-table :data="initialVariableRows" size="small" empty-text="No initial variables">
+    <el-dialog v-model="initialVariablesVisible" title="Flow Variables" width="520px" :destroy-on-close="false">
+      <el-table :data="initialVariableRows" size="small" empty-text="No flow variables">
         <el-table-column label="Variable" min-width="150">
           <template #default="{ row }">
-            <el-input v-if="!row.required" v-model="row.name" size="small" placeholder="Variable name" />
+            <el-input v-if="!row.required && !row.locked && !row.fromFlowInput" v-model="row.name" size="small" placeholder="Variable name" />
             <span v-else class="required-variable">{{ row.name }}</span>
           </template>
         </el-table-column>
         <el-table-column label="Value" min-width="190">
           <template #default="{ row }">
-            <el-input v-model="row.value" size="small" />
+            <el-input v-model="row.value" size="small" :disabled="row.locked" />
+          </template>
+        </el-table-column>
+        <el-table-column label="Source" width="88">
+          <template #default="{ row }">
+            <el-tag v-if="row.fromFlowInput" size="small" effect="plain" :type="row.required ? 'warning' : 'info'">
+              {{ row.required ? 'Required' : 'Input' }}
+            </el-tag>
+            <el-tag v-else size="small" effect="plain">Extra</el-tag>
           </template>
         </el-table-column>
         <el-table-column width="42">
           <template #default="{ $index, row }">
-            <el-button v-if="!row.required" link type="danger" :icon="Delete" @click="removeInitialVariable($index)" />
+            <el-button v-if="!row.required && !row.locked && !row.fromFlowInput" link type="danger" :icon="Delete" @click="removeInitialVariable($index)" />
           </template>
         </el-table-column>
       </el-table>
@@ -238,7 +246,10 @@
           <el-icon><Plus /></el-icon>
           Add Variable
         </el-button>
-        <el-button type="primary" @click="initialVariablesVisible = false">Done</el-button>
+        <el-button @click="initialVariablesVisible = false">Cancel</el-button>
+        <el-button type="primary" :loading="flowStarting" @click="handleInitialVariablesConfirm">
+          {{ variablesDialogMode === 'execute' ? 'Confirm & Execute' : 'Done' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -266,7 +277,7 @@ import { engineApi } from '../api/engine'
 import { flowApi } from '../api/flow'
 import { showEquipmentAlarm } from '../utils/alarmNotification'
 import { engineWebSocketURL } from '../utils/runtimeConfig'
-import type { Flow, FlowRunStatus } from '../types'
+import type { Flow, FlowRunStatus, FlowConstantVariable } from '../types'
 import FlowNode from './flow-editor/FlowNode.vue'
 
 const route = useRoute()
@@ -291,11 +302,15 @@ type InitialVariableRow = {
   name: string
   value: string
   required: boolean
+  locked?: boolean
+  fromFlowInput?: boolean
 }
 
 const initialVariablesVisible = ref(false)
 const initialVariableRows = ref<InitialVariableRow[]>([])
 const runOptionsExpanded = ref(false)
+const selectedFlowConstants = ref<FlowConstantVariable[]>([])
+const variablesDialogMode = ref<'edit' | 'execute'>('edit')
 
 // ===== Execution State =====
 const flowStarting = ref(false)
@@ -383,23 +398,26 @@ function syncStartMarker() {
 
 function handleStartStepChange() {
   const previousValues = new Map(initialVariableRows.value.map(row => [row.name.trim(), row.value]))
+  const previousLocked = new Map(initialVariableRows.value.map(row => [row.name.trim(), !!row.locked]))
   const required = new Set(requiredStartVariables.value)
   initialVariableRows.value = [
     ...requiredStartVariables.value.map(name => ({
       name,
       value: previousValues.get(name) || '',
       required: true,
+      locked: previousLocked.get(name) || false,
+      fromFlowInput: selectedFlowConstants.value.some(v => v.name === name),
     })),
     ...initialVariableRows.value.filter(row => row.name.trim() && !required.has(row.name.trim())).map(row => ({
       ...row,
-      required: false,
+      required: selectedFlowConstants.value.some(v => v.name === row.name.trim() && v.required),
     })),
   ]
   syncStartMarker()
 }
 
 function addInitialVariable() {
-  initialVariableRows.value.push({ name: '', value: '', required: false })
+  initialVariableRows.value.push({ name: '', value: '', required: false, fromFlowInput: false })
 }
 
 function removeInitialVariable(index: number) {
@@ -414,12 +432,55 @@ function initialVariablesPayload(): Record<string, string> {
   )
 }
 
+function missingRequiredVariableNames(): string[] {
+  return initialVariableRows.value
+    .filter(row => row.required && !String(row.value || '').trim())
+    .map(row => row.name)
+    .filter(Boolean)
+}
+
+function openInitialVariablesDialog() {
+  variablesDialogMode.value = 'edit'
+  initialVariablesVisible.value = true
+}
+
 function resetExecutionOptions() {
   startStepId.value = ''
-  initialVariableRows.value = []
+  resetInitialVariablesFromConstants()
   initialVariablesVisible.value = false
+  variablesDialogMode.value = 'edit'
   runOptionsExpanded.value = false
   syncStartMarker()
+}
+
+function parseConstantVariables(raw: unknown): FlowConstantVariable[] {
+  if (!raw) return []
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter(item => item?.name)
+      .map(item => ({
+        name: String(item.name),
+        type: ['string', 'number', 'boolean', 'json'].includes(item.type) ? item.type : 'string',
+        required: !!item.required,
+        defaultValue: String(item.defaultValue ?? item.value ?? ''),
+        overridable: item.overridable !== false,
+        description: String(item.description || ''),
+      }))
+  } catch {
+    return []
+  }
+}
+
+function resetInitialVariablesFromConstants() {
+  initialVariableRows.value = selectedFlowConstants.value.map(v => ({
+    name: v.name,
+    value: v.defaultValue,
+    required: !!v.required,
+    locked: v.overridable === false,
+    fromFlowInput: true,
+  }))
 }
 
 // ===== Data Loading =====
@@ -599,6 +660,7 @@ async function onFlowChange(flowId: number) {
   flowRunning.value = false
   runStatus.value = null
   lastStatus.value = false
+  selectedFlowConstants.value = []
   resetExecutionOptions()
   if (selectedEngineId.value && !availableEngines.value.some((e: any) => e.id === selectedEngineId.value)) {
     selectedEngineId.value = null
@@ -619,6 +681,7 @@ async function loadFlowVisualization(flowId: number) {
     const resp = await flowApi.getByID(flowId)
     const flow = resp.data?.data || resp.data
     if (!flow) return
+    selectedFlowConstants.value = parseConstantVariables(flow.constantVariables)
 
     const steps = flow.steps || []
     totalSteps.value = steps.length
@@ -694,6 +757,7 @@ async function loadFlowVisualization(flowId: number) {
 
     flowNodes.value = newNodes
     flowEdges.value = newEdges
+    resetInitialVariablesFromConstants()
     syncStartMarker()
   } catch {
     ElMessage.error('Failed to load flow')
@@ -740,13 +804,33 @@ function appendReceiveRoutingEdges(nodes: Node[], edges: Edge[]) {
 // ===== Flow Execution =====
 async function handleExecute() {
   if (!selectedEngineId.value || !selectedFlowId.value) return
-  const initialVariables = initialVariablesPayload()
-  const missingVariables = requiredStartVariables.value.filter(name => !initialVariables[name])
+  const missingVariables = missingRequiredVariableNames()
   if (missingVariables.length > 0) {
+    variablesDialogMode.value = 'execute'
     initialVariablesVisible.value = true
-    ElMessage.warning(`Provide initial values for: ${missingVariables.join(', ')}`)
+    ElMessage.warning(`Provide values for: ${missingVariables.join(', ')}`)
     return
   }
+  await startFlowExecution()
+}
+
+async function handleInitialVariablesConfirm() {
+  if (variablesDialogMode.value !== 'execute') {
+    initialVariablesVisible.value = false
+    return
+  }
+  const missingVariables = missingRequiredVariableNames()
+  if (missingVariables.length > 0) {
+    ElMessage.warning(`Provide values for: ${missingVariables.join(', ')}`)
+    return
+  }
+  initialVariablesVisible.value = false
+  await startFlowExecution()
+}
+
+async function startFlowExecution() {
+  if (!selectedEngineId.value || !selectedFlowId.value) return
+  const initialVariables = initialVariablesPayload()
   const startIdx = startStepId.value ? Math.max(0, flowNodes.value.findIndex(node => node.id === startStepId.value)) : 0
   flowStarting.value = true
   try {
@@ -763,6 +847,7 @@ async function handleExecute() {
     const startLabel = selectedStartNode.value?.data?.name || selectedStartNode.value?.data?.label
     addLog(startLabel ? `--- Flow execution started from step ${startIdx + 1}: ${startLabel} ---` : '--- Flow execution started ---')
     ElMessage.success('Flow started')
+    variablesDialogMode.value = 'edit'
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.error || 'Failed to start flow')
   } finally {
