@@ -23,8 +23,8 @@
         <span>Timeout: {{ data.config?.timeout || 30 }}s</span>
         <template v-if="data.config?.rules?.length">
           <div v-for="(rule, i) in data.config.rules" :key="i" class="node-rule">
-            <span v-if="rule.variable">{{ rule.variable }} {{ rule.operator === 'contains' ? 'Contains' : 'Equals' }} "{{ rule.value || '?' }}" → #{{ rule.targetStepIdx }}</span>
-            <span v-else>{{ rule.operator === 'contains' ? 'Contains' : 'Equals' }} "{{ rule.value || '?' }}" → #{{ rule.targetStepIdx }}</span>
+            <span v-if="rule.variable">{{ rule.variable }} {{ operatorLabel(rule.operator) }} "{{ rule.value || '?' }}" → #{{ rule.targetStepIdx }}</span>
+            <span v-else>{{ operatorLabel(rule.operator) }} "{{ rule.value || '?' }}" → #{{ rule.targetStepIdx }}</span>
           </div>
           <span class="node-branch">Default → #{{ data.config?.defaultStepIdx ?? 'next' }}</span>
         </template>
@@ -91,6 +91,12 @@ function previewText(sml: string): string {
   if (!sml) return ''
   const first = sml.split('\n')[0]
   return first.length > 30 ? first.slice(0, 30) + '...' : first
+}
+
+function operatorLabel(operator?: string): string {
+  if (operator === 'contains') return 'Contains'
+  if (operator === 'not_equals') return 'Not Equal'
+  return 'Equals'
 }
 
 function getNodeLabel(): string {

@@ -232,7 +232,7 @@ export interface FlowStep {
 }
 
 export interface FlowMatchRule {
-  operator: 'contains' | 'equals'
+  operator: 'contains' | 'equals' | 'not_equals'
   variable: string
   value: string
   targetStepIdx: number

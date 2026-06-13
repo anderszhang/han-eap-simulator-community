@@ -35,6 +35,7 @@ const routes = [
       { path: 'communication', component: CommunicationPage },
       { path: 'flow', component: FlowPage, meta: { keepAlive: true } },
       { path: 'flow/:id/edit', component: FlowEditorPage },
+      { path: 'flow-template/:id/edit', component: FlowEditorPage },
       { path: 'auto-secs', component: AutoSecsPage },
       { path: 'checklist', component: ChecklistPage, meta: { keepAlive: true } },
       { path: 'checklist/:id/edit', component: ChecklistDetailPage },

@@ -13,14 +13,24 @@
           <el-tag v-if="checklist.modelDesc" size="small" effect="plain">{{ checklist.modelDesc }}</el-tag>
         </div>
         <div class="header-right">
-          <el-button type="primary" @click="handleOpenGenerateFlow">
+          <el-dropdown
+            split-button
+            type="primary"
+            trigger="click"
+            @click="handleOpenGenerateFlow"
+            @command="handleGenerateCommand"
+          >
             <el-icon><DocumentAdd /></el-icon>
             Generate Flow
-          </el-button>
-          <el-button @click="handleOpenGenerateSML">
-            <el-icon><DocumentAdd /></el-icon>
-            Generate SML
-          </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="sml">
+                  <el-icon><DocumentAdd /></el-icon>
+                  Generate SML
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <el-button @click="handleImport">
             <el-icon><Upload /></el-icon>
             Import Excel
@@ -989,6 +999,12 @@ const handleOpenGenerateSML = () => {
   smlSourceFolder.value = 'SML demo'
   loadSMLRootFolders()
   smlDialogVisible.value = true
+}
+
+const handleGenerateCommand = (command: string) => {
+  if (command === 'sml') {
+    handleOpenGenerateSML()
+  }
 }
 
 const loadSMLRootFolders = async () => {

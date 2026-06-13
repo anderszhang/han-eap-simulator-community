@@ -297,6 +297,7 @@ const flowEdges = ref<Edge[]>([])
 const totalSteps = ref(0)
 const executedSteps = ref<Set<number>>(new Set())
 const startStepId = ref('')
+const defaultStartStepId = ref('')
 
 type InitialVariableRow = {
   name: string
@@ -367,7 +368,7 @@ const requiredStartVariables = computed(() => {
 
 const initialVariablesCount = computed(() => initialVariableRows.value.filter(row => row.name.trim()).length)
 const configuredRunOptionsCount = computed(() => (
-  (startStepId.value ? 1 : 0) + (initialVariablesCount.value > 0 ? 1 : 0)
+  (startStepId.value && startStepId.value !== defaultStartStepId.value ? 1 : 0) + (initialVariablesCount.value > 0 ? 1 : 0)
 ))
 
 function collectConfigVariables(value: unknown, result: Set<string>) {
@@ -416,6 +417,25 @@ function handleStartStepChange() {
   syncStartMarker()
 }
 
+function findGraphStartNodeId(nodes: Node[], edges: Edge[]): string {
+  if (nodes.length === 0) return ''
+
+  const normalEdges = edges.filter(edge => !String(edge.id || '').startsWith('_rule_'))
+  if (normalEdges.length === 0) return nodes[0].id
+
+  const incomingTargets = new Set(normalEdges.map(edge => edge.target).filter(Boolean))
+  const rootNodes = nodes.filter(node => !incomingTargets.has(node.id))
+  if (rootNodes.length === 1) return rootNodes[0].id
+
+  return nodes[0].id
+}
+
+function applyDefaultStartNode() {
+  defaultStartStepId.value = findGraphStartNodeId(flowNodes.value, flowEdges.value)
+  startStepId.value = defaultStartStepId.value
+  handleStartStepChange()
+}
+
 function addInitialVariable() {
   initialVariableRows.value.push({ name: '', value: '', required: false, fromFlowInput: false })
 }
@@ -446,6 +466,7 @@ function openInitialVariablesDialog() {
 
 function resetExecutionOptions() {
   startStepId.value = ''
+  defaultStartStepId.value = ''
   resetInitialVariablesFromConstants()
   initialVariablesVisible.value = false
   variablesDialogMode.value = 'edit'
@@ -758,7 +779,7 @@ async function loadFlowVisualization(flowId: number) {
     flowNodes.value = newNodes
     flowEdges.value = newEdges
     resetInitialVariablesFromConstants()
-    syncStartMarker()
+    applyDefaultStartNode()
   } catch {
     ElMessage.error('Failed to load flow')
   }
@@ -793,7 +814,7 @@ function appendReceiveRoutingEdges(nodes: Node[], edges: Edge[]) {
       config.rules.forEach((rule: Record<string, any>, index: number) => {
         const variable = rule.variable || '?'
         const value = rule.value || '?'
-        const operator = rule.operator === 'equals' ? '=' : 'contains'
+        const operator = rule.operator === 'equals' ? '=' : rule.operator === 'not_equals' ? '!=' : 'contains'
         addRoutingEdge(node, rule.targetStepIdx, `r${index}`, `${variable} ${operator} ${value}`, '#e6a23c')
       })
     }

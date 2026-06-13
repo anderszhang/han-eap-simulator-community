@@ -108,7 +108,18 @@
 
           <el-table border :data="templateTableData" style="width: 100%" v-loading="templateLoading" class="data-table">
             <el-table-column type="index" label="#" width="50" />
-            <el-table-column prop="name" label="Name" width="180" />
+            <el-table-column prop="name" label="Name" width="180">
+              <template #default="{ row }">
+                <el-link
+                  v-if="row.userId === currentUser?.id"
+                  type="primary"
+                  @click="handleEditTemplate(row)"
+                >
+                  {{ row.name }}
+                </el-link>
+                <span v-else>{{ row.name }}</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="description" label="Description" min-width="200" show-overflow-tooltip />
             <el-table-column label="Interval" width="90">
               <template #default="{ row }">{{ row.stepInterval || 0 }}ms</template>
@@ -123,10 +134,11 @@
             </el-table-column>
             <el-table-column prop="username" label="Creator" width="100" />
             <el-table-column prop="createTime" label="Created" width="165" />
-              <el-table-column label="Actions" width="120" fixed="right" align="center">
+              <el-table-column label="Actions" width="150" fixed="right" align="center">
                 <template #default="{ row }">
                   <div class="row-actions">
                     <el-button text @click="handleUseTemplate(row)" title="Use Template"><el-icon><CopyDocument /></el-icon></el-button>
+                    <el-button v-if="row.userId === currentUser?.id" text type="primary" @click="handleEditTemplate(row)" title="Edit Template"><el-icon><Edit /></el-icon></el-button>
                     <el-button v-if="row.userId === currentUser?.id" text type="danger" @click="handleDeleteTemplate(row)" title="Delete"><el-icon><Delete /></el-icon></el-button>
                   </div>
                 </template>
@@ -529,6 +541,10 @@ const handleUseTemplate = async (row: FlowTemplate) => {
     const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Create from template failed'
     ElMessage.error(msg)
   }
+}
+
+const handleEditTemplate = (row: FlowTemplate) => {
+  router.push(`/flow-template/${row.id}/edit`)
 }
 
 const handleDeleteTemplate = (row: FlowTemplate) => {

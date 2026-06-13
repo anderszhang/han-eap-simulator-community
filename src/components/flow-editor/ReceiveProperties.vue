@@ -95,6 +95,7 @@
             <el-select v-model="rule.operator" style="width: 100px" size="small">
               <el-option label="Contains" value="contains" />
               <el-option label="Equals" value="equals" />
+              <el-option label="Not Equal" value="not_equals" />
             </el-select>
             <el-input v-model="rule.value" placeholder="Value" size="small" style="flex: 1" />
           </div>
@@ -168,7 +169,19 @@ const stepName = computed({
     props.nodeData.label = val
   },
 })
-const sortedNodes = computed(() => [...props.nodes].sort((a, b) => a.position.y - b.position.y))
+function stepOrderFromNodeId(id: string): number {
+  const match = /^step_(\d+)$/.exec(id)
+  return match ? Number(match[1]) - 1 : Number.MAX_SAFE_INTEGER
+}
+
+function nodeFlowOrder(node: Node, sourceNodes: Node[]): number {
+  const fromId = stepOrderFromNodeId(node.id)
+  if (fromId !== Number.MAX_SAFE_INTEGER) return fromId
+  const idx = sourceNodes.findIndex(n => n.id === node.id)
+  return idx >= 0 ? idx : Number.MAX_SAFE_INTEGER
+}
+
+const sortedNodes = computed(() => [...props.nodes].sort((a, b) => nodeFlowOrder(a, props.nodes) - nodeFlowOrder(b, props.nodes)))
 const targetOptions = computed(() => sortedNodes.value
   .map((node, index) => ({ node, index }))
   .filter(option => option.node.id !== props.nodeId)

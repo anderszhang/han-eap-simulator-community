@@ -16,7 +16,10 @@
           maxlength="100"
           placeholder="Flow name"
         />
-        <el-tag v-if="flowId" :type="flowStatusTag.type" size="small" effect="dark">
+        <el-tag v-if="isTemplateMode" type="info" size="small" effect="dark">
+          Template
+        </el-tag>
+        <el-tag v-else-if="flowId" :type="flowStatusTag.type" size="small" effect="dark">
           {{ flowStatusTag.label }}
         </el-tag>
       </div>
@@ -32,7 +35,7 @@
         </el-form>
       </div>
       <div class="topbar-right">
-        <el-tooltip content="Open Auto SECS with this engine selected" placement="bottom">
+        <el-tooltip v-if="!isTemplateMode" content="Open Auto SECS with this engine selected" placement="bottom">
           <span class="action-wrap">
             <el-select
               v-model="runEngineId"
@@ -44,7 +47,7 @@
             </el-select>
           </span>
         </el-tooltip>
-        <el-tooltip content="Save changes before opening Auto SECS" placement="bottom" :disabled="!isDirty">
+        <el-tooltip v-if="!isTemplateMode" content="Save changes before opening Auto SECS" placement="bottom" :disabled="!isDirty">
           <span class="action-wrap">
             <el-button type="success" @click="handleRun" :disabled="isDirty" size="small">
               <el-icon><VideoPlay /></el-icon>
@@ -53,7 +56,7 @@
           </span>
         </el-tooltip>
         <el-button
-          v-if="isPublished"
+          v-if="!isTemplateMode && isPublished"
           type="success"
           size="small"
           disabled
@@ -61,7 +64,7 @@
           <el-icon><CircleCheck /></el-icon>
           Published
         </el-button>
-        <el-tooltip content="Save changes before publishing" placement="bottom" :disabled="!isDirty">
+        <el-tooltip v-if="!isTemplateMode" content="Save changes before publishing" placement="bottom" :disabled="!isDirty">
           <span class="action-wrap">
             <el-button
               v-if="!isPublished"
@@ -77,6 +80,7 @@
           </span>
         </el-tooltip>
         <el-dropdown
+          v-if="!isTemplateMode"
           split-button
           type="primary"
           size="small"
@@ -96,6 +100,16 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
+        <el-button
+          v-else
+          type="primary"
+          size="small"
+          :loading="saving"
+          @click="handleSave"
+        >
+          <el-icon><Check /></el-icon>
+          Save
+        </el-button>
       </div>
     </div>
 
@@ -470,6 +484,25 @@
               </el-form>
             </div>
           </div>
+          <div v-else-if="isTemplateMode" class="props-content flow-props-panel">
+            <div class="flow-props-section">
+              <div class="variables-section-title">
+                <span>Template Properties</span>
+              </div>
+              <el-form label-width="88px" size="small" class="template-props-form">
+                <el-form-item label="Description">
+                  <el-input
+                    v-model="flowDescription"
+                    type="textarea"
+                    :rows="5"
+                    maxlength="500"
+                    show-word-limit
+                    placeholder="Template description"
+                  />
+                </el-form-item>
+              </el-form>
+            </div>
+          </div>
           <div v-else class="props-content flow-props-panel">
             <div class="flow-props-section">
               <div class="variables-section-title">
@@ -700,6 +733,7 @@ const edges = ref<Edge[]>([])
 
 // ===== State =====
 const flowId = ref<number | null>(null)
+const templateId = ref<number | null>(null)
 const flowName = ref('')
 const flowDescription = ref('')
 const stepInterval = ref(1000)
@@ -734,6 +768,7 @@ const editorBodyRef = ref<HTMLElement>()
 const leftSidebarWidth = ref(240)
 const rightSidebarWidth = ref(332)
 const isDraggingNodes = ref(false)
+const isTemplateMode = computed(() => route.path.startsWith('/flow-template/'))
 
 const MIN_SIDEBAR_WIDTH = 180
 const MAX_SIDEBAR_RATIO = 0.38
@@ -1112,9 +1147,23 @@ onNodesChange((changes) => {
   }
 })
 
-const sortedNodes = computed(() => {
-  return [...nodes.value].sort((a, b) => a.position.y - b.position.y)
-})
+function stepOrderFromNodeId(id: string): number {
+  const match = /^step_(\d+)$/.exec(id)
+  return match ? Number(match[1]) - 1 : Number.MAX_SAFE_INTEGER
+}
+
+function nodeFlowOrder(node: Node, sourceNodes: Node[]): number {
+  const fromId = stepOrderFromNodeId(node.id)
+  if (fromId !== Number.MAX_SAFE_INTEGER) return fromId
+  const idx = sourceNodes.findIndex(n => n.id === node.id)
+  return idx >= 0 ? idx : Number.MAX_SAFE_INTEGER
+}
+
+function getFlowOrderedNodes(sourceNodes: Node[] = nodes.value): Node[] {
+  return [...sourceNodes].sort((a, b) => nodeFlowOrder(a, sourceNodes) - nodeFlowOrder(b, sourceNodes))
+}
+
+const sortedNodes = computed(() => getFlowOrderedNodes())
 
 function getNodeStepIndex(nodeId: string): number {
   const idx = sortedNodes.value.findIndex(n => n.id === nodeId)
@@ -1234,13 +1283,52 @@ function syncRuleEdges() {
         const rule = cfg.rules[ri]
         const varName = rule.variable || '?'
         const val = rule.value || '?'
-        addRuleEdge(rule.targetStepIdx, `${varName} ${rule.operator === 'equals' ? '=' : '∋'} ${val}`, `r${ri}`, '#e6a23c')
+        const operatorLabel = rule.operator === 'equals' ? '=' : rule.operator === 'not_equals' ? '!=' : '∋'
+        addRuleEdge(rule.targetStepIdx, `${varName} ${operatorLabel} ${val}`, `r${ri}`, '#e6a23c')
       }
     }
 
     if (cfg?.defaultStepIdx !== undefined && cfg?.defaultStepIdx !== null) {
       addRuleEdge(cfg.defaultStepIdx, 'default', 'def', '#909399')
     }
+  }
+}
+
+function buildPersistPayload() {
+  const sorted = getFlowOrderedNodes()
+  const { canonicalNodes, canonicalEdges } = canonicalizeFlowGraph(sorted)
+  const selectedIndex = selectedNode.value ? sorted.findIndex(n => n.id === selectedNode.value?.id) : -1
+  nodes.value = canonicalNodes
+  edges.value = canonicalEdges
+  syncRuleEdges()
+  selectedNode.value = selectedIndex >= 0 ? (nodes.value[selectedIndex] as GraphNode) : null
+
+  const steps = nodes.value.map(n => {
+    const d = n.data as { stepType: string; name: string; config: Record<string, unknown> }
+    return {
+      type: d.stepType,
+      name: d.name || d.stepType,
+      config: JSON.stringify(d.config || {}),
+    }
+  })
+
+  return {
+    name: flowName.value,
+    description: flowDescription.value,
+    stepInterval: stepInterval.value,
+    commMode: commMode.value,
+    edges: JSON.stringify({
+      edges: canonicalEdges.map(e => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+      })),
+      positions: Object.fromEntries(nodes.value.map(n => [
+        n.id, { x: n.position.x, y: n.position.y },
+      ])),
+    }),
+    constantVariables: serializeConstantVariables(),
+    steps,
   }
 }
 
@@ -2103,6 +2191,109 @@ async function loadFlow(id: number) {
   }
 }
 
+async function loadTemplate(id: number) {
+  try {
+    isLoadingFlow.value = true
+    isHydratingFlow.value = true
+    const resp = await flowTemplateApi.getByID(id)
+    const template = resp.data?.data || resp.data
+    if (!template) { ElMessage.error('Template not found'); return }
+
+    templateId.value = template.id
+    flowName.value = template.name
+    flowDescription.value = template.description || ''
+    stepInterval.value = template.stepInterval || 0
+    commMode.value = template.commMode || 'active'
+    constantVariables.value = []
+    isPublished.value = false
+    isDirty.value = false
+
+    let steps: any[] = []
+    try {
+      const parsed = typeof template.steps === 'string' ? JSON.parse(template.steps || '[]') : template.steps
+      steps = Array.isArray(parsed) ? parsed : []
+    } catch {
+      steps = []
+    }
+
+    nodeIdCounter = 0
+    const newNodes: Node[] = []
+    const newEdges: Edge[] = []
+
+    let savedLayout: PersistedFlowLayout = {}
+    if (template.edges) {
+      try {
+        const parsed = typeof template.edges === 'string' ? JSON.parse(template.edges) : template.edges
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          savedLayout = parsed
+        } else if (Array.isArray(parsed)) {
+          savedLayout = { edges: parsed }
+        }
+      } catch { /* fall through */ }
+    }
+    savedLayout = normalizeSavedLayout(savedLayout, steps.length)
+
+    steps.forEach((step: any, idx: number) => {
+      let config: Record<string, any> = {}
+      try {
+        const raw = typeof step.config === 'string' ? JSON.parse(step.config) : step.config
+        config = typeof raw === 'string' ? JSON.parse(raw) : raw
+      } catch { config = {} }
+      const nodeId = stepNodeId(idx)
+      const pos = savedLayout.positions?.[nodeId] || { x: 300, y: idx * 120 + 50 }
+      newNodes.push({
+        id: nodeId,
+        type: step.type,
+        position: { x: pos.x, y: pos.y },
+        data: {
+          stepType: step.type,
+          name: step.name,
+          config,
+          label: step.name,
+        },
+      })
+    })
+
+    if (savedLayout.edges?.length) {
+      const validNodeIds = new Set(newNodes.map(n => n.id))
+      savedLayout.edges.forEach((e: any) => {
+        if (!validNodeIds.has(e.source) || !validNodeIds.has(e.target)) return
+        newEdges.push({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          animated: true,
+          style: { stroke: '#409eff', strokeWidth: 2 },
+        })
+      })
+    }
+    if (newEdges.length === 0 && newNodes.length > 1) {
+      for (let idx = 1; idx < newNodes.length; idx++) {
+        newEdges.push({
+          id: `e-${newNodes[idx - 1].id}-${newNodes[idx].id}`,
+          source: newNodes[idx - 1].id,
+          target: newNodes[idx].id,
+          animated: true,
+          style: { stroke: '#409eff', strokeWidth: 2 },
+        })
+      }
+    }
+
+    nodeIdCounter = steps.length
+    nodes.value = newNodes
+    edges.value = newEdges
+    await nextTick()
+    isLoadingFlow.value = false
+    syncRuleEdges()
+    await finishFlowHydration()
+  } catch {
+    ElMessage.error('Failed to load template')
+    isHydratingFlow.value = false
+  } finally {
+    isLoadingFlow.value = false
+  }
+}
+
 async function loadEngines() {
   try {
     const resp = await engineApi.getEngines({ page: 1, pageSize: 100 })
@@ -2128,14 +2319,14 @@ async function handleRun() {
 
 async function handleSave() {
   if (!flowName.value.trim()) {
-    ElMessage.warning('Flow name is required')
+    ElMessage.warning(isTemplateMode.value ? 'Template name is required' : 'Flow name is required')
     return
   }
   if (nodes.value.length === 0) {
     ElMessage.warning('Add at least one step')
     return
   }
-  if (!validateConstantVariables()) {
+  if (!isTemplateMode.value && !validateConstantVariables()) {
     return
   }
 
@@ -2154,48 +2345,31 @@ async function handleSave() {
 
   saving.value = true
   try {
+    const payload = buildPersistPayload()
+
+    if (isTemplateMode.value) {
+      if (!templateId.value) {
+        ElMessage.warning('Template ID is missing')
+        return
+      }
+      await flowTemplateApi.update(templateId.value, {
+        name: payload.name,
+        description: payload.description,
+        stepInterval: payload.stepInterval,
+        commMode: payload.commMode,
+        edges: payload.edges,
+        steps: payload.steps,
+      })
+      ElMessage.success('Template saved')
+      savedEditorSignature = editorSignature.value
+      recordGraphHistory()
+      isDirty.value = false
+      return
+    }
+
     if (flowId.value && isPublished.value) {
       try { await flowApi.unpublish(flowId.value) } catch { /* continue */ }
       isPublished.value = false
-    }
-
-    // Sort nodes by Y position to determine execution order, then persist a
-    // canonical node-id layout. The backend stores only step order, so stale
-    // IDs like step_16 would otherwise reconnect to the wrong step on reload.
-    const sorted = [...nodes.value].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x)
-    const { canonicalNodes, canonicalEdges } = canonicalizeFlowGraph(sorted)
-    const selectedIndex = selectedNode.value ? sorted.findIndex(n => n.id === selectedNode.value?.id) : -1
-    nodes.value = canonicalNodes
-    edges.value = canonicalEdges
-    syncRuleEdges()
-    selectedNode.value = selectedIndex >= 0 ? (nodes.value[selectedIndex] as GraphNode) : null
-
-    const steps = nodes.value.map(n => {
-      const d = n.data as { stepType: string; name: string; config: Record<string, unknown> }
-      return {
-        type: d.stepType,
-        name: d.name || d.stepType,
-        config: JSON.stringify(d.config || {}),
-      }
-    })
-
-    const payload = {
-      name: flowName.value,
-      description: flowDescription.value,
-      stepInterval: stepInterval.value,
-      commMode: commMode.value,
-      edges: JSON.stringify({
-        edges: canonicalEdges.map(e => ({
-          id: e.id,
-          source: e.source,
-          target: e.target,
-        })),
-        positions: Object.fromEntries(nodes.value.map(n => [
-          n.id, { x: n.position.x, y: n.position.y },
-        ])),
-      }),
-      constantVariables: serializeConstantVariables(),
-      steps,
     }
 
     if (flowId.value) {
@@ -2242,39 +2416,14 @@ async function handleSaveTemplate() {
 
   saveTemplateLoading.value = true
   try {
-    const sorted = [...nodes.value].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x)
-    const { canonicalNodes, canonicalEdges } = canonicalizeFlowGraph(sorted)
-    const selectedIndex = selectedNode.value ? sorted.findIndex(n => n.id === selectedNode.value?.id) : -1
-    nodes.value = canonicalNodes
-    edges.value = canonicalEdges
-    syncRuleEdges()
-    selectedNode.value = selectedIndex >= 0 ? (nodes.value[selectedIndex] as GraphNode) : null
-
-    const steps = nodes.value.map(n => {
-      const d = n.data as { stepType: string; name: string; config: Record<string, unknown> }
-      return {
-        type: d.stepType,
-        name: d.name || d.stepType,
-        config: JSON.stringify(d.config || {}),
-      }
-    })
-
+    const payload = buildPersistPayload()
     await flowTemplateApi.create({
       name: saveTemplateForm.value.name,
       description: saveTemplateForm.value.description,
-      commMode: commMode.value,
-      stepInterval: stepInterval.value,
-      edges: JSON.stringify({
-        edges: canonicalEdges.map(e => ({
-          id: e.id,
-          source: e.source,
-          target: e.target,
-        })),
-        positions: Object.fromEntries(nodes.value.map(n => [
-          n.id, { x: n.position.x, y: n.position.y },
-        ])),
-      }),
-      steps,
+      commMode: payload.commMode,
+      stepInterval: payload.stepInterval,
+      edges: payload.edges,
+      steps: payload.steps,
     })
     recordGraphHistory()
     saveTemplateVisible.value = false
@@ -2307,7 +2456,7 @@ function markDirty() {
 }
 
 function updateDirtyState() {
-  if (!flowId.value || isLoadingFlow.value || isHydratingFlow.value) return
+  if ((!flowId.value && !templateId.value) || isLoadingFlow.value || isHydratingFlow.value) return
   isDirty.value = editorSignature.value !== savedEditorSignature
 }
 
@@ -2366,10 +2515,12 @@ function onBeforeUnload(e: BeforeUnloadEvent) {
 onMounted(async () => {
   loadEngines()
   const id = route.params.id as string
-  if (id && id !== 'new') {
+  if (isTemplateMode.value && id && id !== 'new') {
+    await loadTemplate(Number(id))
+  } else if (id && id !== 'new') {
     await loadFlow(Number(id))
   } else {
-    flowName.value = 'New Flow'
+    flowName.value = isTemplateMode.value ? 'New Template' : 'New Flow'
     constantVariables.value = []
     nodes.value = []
     resetGraphHistory()

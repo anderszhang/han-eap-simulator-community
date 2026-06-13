@@ -3,6 +3,9 @@
     <div class="section-header">
       <span>Engines</span>
       <span class="header-actions">
+        <el-button size="small" circle :type="showSearch ? 'primary' : ''" @click="toggleSearch" title="Search">
+          <el-icon><Search /></el-icon>
+        </el-button>
         <el-button size="small" circle @click="emit('open-engine-page')" title="Manage Engines">
           <el-icon><Setting /></el-icon>
         </el-button>
@@ -14,9 +17,22 @@
         </el-button>
       </span>
     </div>
+    <div v-if="showSearch" class="search-bar">
+      <el-input
+        ref="searchInputRef"
+        v-model="searchKeyword"
+        size="small"
+        clearable
+        placeholder="Search name, IP, port, mode, status"
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+    </div>
     <div class="engine-list" v-loading="loading">
       <div
-        v-for="engine in engines"
+        v-for="engine in filteredEngines"
         :key="engine.id"
         class="engine-item"
         :class="{ 
@@ -36,8 +52,15 @@
           :title="getStatusText(engine.status)"
         />
         <div class="engine-info" @click="handleEngineClick(engine.id)">
-          <span class="engine-name">{{ engine.engineName }}</span>
-          <span class="engine-port">:{{ engine.port }}</span>
+          <div class="engine-main-row">
+            <span class="engine-name">{{ engine.engineName }}</span>
+            <span class="engine-port">:{{ engine.port }}</span>
+          </div>
+          <div class="engine-meta-row">
+            <span>{{ engine.mode || '-' }}</span>
+            <span>{{ engine.ip }}:{{ engine.port }}</span>
+            <span>{{ getStatusText(engine.status) }}</span>
+          </div>
         </div>
         <div class="engine-actions">
           <!-- 启动/停止按钮 -->
@@ -73,12 +96,16 @@
       <div v-if="engines.length === 0" class="empty-state">
         <el-empty description="No engines found" />
       </div>
+      <div v-else-if="filteredEngines.length === 0" class="empty-state">
+        <el-empty description="No engines match" />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Refresh, VideoPlay, VideoPause, Setting, ChatLineRound } from '@element-plus/icons-vue'
+import { computed, nextTick, ref } from 'vue'
+import { Refresh, Search, VideoPlay, VideoPause, Setting, ChatLineRound } from '@element-plus/icons-vue'
 
 export interface EngineItem {
   id: number
@@ -114,6 +141,38 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+const showSearch = ref(false)
+const searchKeyword = ref('')
+const searchInputRef = ref()
+
+const filteredEngines = computed(() => {
+  const keyword = searchKeyword.value.trim().toLowerCase()
+  if (!keyword) return props.engines
+  return props.engines.filter(engine => {
+    const fields = [
+      engine.engineName,
+      engine.ip,
+      String(engine.port),
+      engine.mode,
+      getStatusText(engine.status),
+      engine.status || '',
+      String(engine.deviceId),
+      engine.description || '',
+    ]
+    return fields.some(field => field.toLowerCase().includes(keyword))
+  })
+})
+
+const toggleSearch = () => {
+  showSearch.value = !showSearch.value
+  if (!showSearch.value) {
+    searchKeyword.value = ''
+  } else {
+    nextTick(() => {
+      searchInputRef.value?.focus()
+    })
+  }
+}
 
 const isOperating = (engineId: number) => {
   return props.operatingEngines.has(engineId)
@@ -164,6 +223,12 @@ const handleToggleLog = (engine: EngineItem) => {
 .header-actions {
   display: flex;
   gap: 4px;
+}
+
+.search-bar {
+  padding: 8px;
+  border-bottom: 1px solid #ebeef5;
+  background: #fff;
 }
 
 .engine-list {
@@ -235,11 +300,38 @@ const handleToggleLog = (engine: EngineItem) => {
 
 .engine-info {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 3px;
   flex: 1;
   min-width: 0;
-  padding: 10px 8px;
+  padding: 8px;
+}
+
+.engine-main-row,
+.engine-meta-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.engine-main-row {
+  gap: 8px;
+}
+
+.engine-meta-row {
+  gap: 6px;
+  color: #909399;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.engine-meta-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .engine-name {
