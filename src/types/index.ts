@@ -247,6 +247,7 @@ export interface FlowStepConfig {
   sml?: string
   smlId?: number | null
   smlName?: string
+  binding?: FlowStepBinding
   matchSxFy?: string
   timeout?: number
   milliseconds?: number
@@ -256,6 +257,21 @@ export interface FlowStepConfig {
   nodeVariables?: FlowVariable[]
   script?: string
   computedVariables?: ComputedVariable[]
+}
+
+export interface FlowStepBinding {
+  kind: 'sendSmlByName' | 'queryVid' | 'event' | 'receiveEvent'
+  name?: string
+  names?: string[]
+  ceid?: string
+  ceidName?: string
+  ceidVariable?: string
+  dataId?: string
+  vidName?: string
+  vidNames?: string[]
+  extractVids?: string[]
+  keywords?: string[]
+  targetStepIdx?: number
 }
 
 export interface ComputedVariable {

@@ -417,6 +417,13 @@
                     disabled
                   />
                 </el-form-item>
+                <ChecklistBindingProperties
+                  v-if="isTemplateMode"
+                  :config="selectedNode.data.config"
+                  :step-type="selectedNode.data.stepType"
+                  :nodes="nodes"
+                  @change="markDirty"
+                />
                 <el-form-item label="Source">
                   <el-radio-group v-model="smlSource" @change="onSmlSourceChange">
                     <el-radio value="saved">Saved</el-radio>
@@ -462,6 +469,13 @@
 
                 <!-- Receive -->
                 <template v-if="selectedNode.data.stepType === 'receive'">
+                  <ChecklistBindingProperties
+                    v-if="isTemplateMode"
+                    :config="selectedNode.data.config"
+                    :step-type="selectedNode.data.stepType"
+                    :nodes="nodes"
+                    @change="syncRuleEdges"
+                  />
                   <ReceiveProperties
                     :nodeData="selectedNode.data"
                     :nodeId="selectedNode.id"
@@ -703,6 +717,7 @@ import { smlApi } from '../api/sml'
 import { flowFunctionApi } from '../api/flow-function'
 import type { FlowStepConfig, FlowFunction, FlowConstantVariable } from '../types'
 import FlowNode from './flow-editor/FlowNode.vue'
+import ChecklistBindingProperties from './flow-editor/ChecklistBindingProperties.vue'
 import ReceiveProperties from './flow-editor/ReceiveProperties.vue'
 import * as monaco from 'monaco-editor'
 import { registerSMLLanguage } from '../utils/smlLanguage'
