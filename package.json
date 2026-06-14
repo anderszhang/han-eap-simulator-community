@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build",
+    "build:help": "node scripts/build-help.mjs",
+    "build": "npm run build:help && vue-tsc && vite build",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit"
   },

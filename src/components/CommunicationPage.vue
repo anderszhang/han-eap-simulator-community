@@ -26,10 +26,13 @@
           <SmlTree
             :tree-data="smlTreeData"
             :selected-file="selectedSmlFile"
+            :user-options="smlUserOptions"
             v-model:expanded-keys="expandedKeys"
+            v-model:selected-user-id="selectedSmlUserId"
             @node-click="handleSmlNodeClick"
             @node-dblclick="handleSmlDblClick"
             @refresh="loadSmlTree"
+            @user-change="handleSmlUserChange"
           />
         </div>
 
@@ -83,8 +86,10 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useEngines, type EngineItem } from '../composables/useEngines'
 import { useWebSocket, type EngineInfo } from '../composables/useWebSocket'
+import { useCurrentUser } from '../composables/useCurrentUser'
 import { smlApi } from '../api/sml'
 import { engineApi } from '../api/engine'
+import { userApi } from '../api/user'
 import type { SMLNode } from '../types'
 import EngineList from './communication/EngineList.vue'
 import SmlTree from './communication/SmlTree.vue'
@@ -111,6 +116,7 @@ const {
 } = useEngines()
 
 const engineVars = ref<Record<number, Record<string, string>>>({})
+const { currentUser } = useCurrentUser()
 
 const loadEngineVars = async (engineId: number) => {
   try {
@@ -170,6 +176,8 @@ const {
 const smlTreeData = ref<SMLNode[]>([])
 const selectedSmlFile = ref<SMLNode | null>(null)
 const expandedKeys = ref<number[]>([])
+const smlUserOptions = ref<{ id: number; username: string }[]>([])
+const selectedSmlUserId = ref<number | null>(null)
 
 const getEngineName = (engineId: number): string => {
   return getEngine(engineId)?.engineName || getWsEngine(engineId)?.engineName || `Engine ${engineId}`
@@ -232,8 +240,11 @@ const onMouseUp = () => {
 onMounted(async () => {
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('mouseup', onMouseUp)
+  if (currentUser.value && currentUser.value.roleId !== 1) {
+    selectedSmlUserId.value = currentUser.value.id
+  }
   await loadEngines()
-  await loadSmlTree()
+  await Promise.all([loadSmlUsers(), loadSmlTree()])
   startStatusPoll()
 })
 
@@ -246,13 +257,25 @@ onUnmounted(() => {
 
 const loadSmlTree = async () => {
   try {
-    const response = await smlApi.getTree()
+    const response = await smlApi.getTree(selectedSmlUserId.value ?? undefined)
     if (response.data && response.data.data) {
       smlTreeData.value = JSON.parse(JSON.stringify(response.data.data))
+      if (selectedSmlFile.value && !containsSmlNode(smlTreeData.value, selectedSmlFile.value.id)) {
+        selectedSmlFile.value = null
+      }
     }
   } catch (error) {
     console.error('Failed to load SML tree:', error)
     ElMessage.error('Failed to load SML tree')
+  }
+}
+
+const loadSmlUsers = async () => {
+  try {
+    const response = await userApi.getAll()
+    smlUserOptions.value = response.data?.data || []
+  } catch (error) {
+    console.error('Failed to load SML users:', error)
   }
 }
 
@@ -316,6 +339,11 @@ const handleSmlDblClick = async (data: SMLNode) => {
   }
 }
 
+const handleSmlUserChange = async () => {
+  expandedKeys.value = []
+  await loadSmlTree()
+}
+
 const handleSaveSml = async (content: string) => {
   if (!selectedSmlFile.value) return
 
@@ -345,6 +373,16 @@ function updateSmlNodeContent(nodes: SMLNode[], id: number, content: string) {
       updateSmlNodeContent(node.children, id, content)
     }
   }
+}
+
+function containsSmlNode(nodes: SMLNode[], id: number): boolean {
+  for (const node of nodes) {
+    if (node.id === id) return true
+    if (node.children?.length && containsSmlNode(node.children, id)) {
+      return true
+    }
+  }
+  return false
 }
 </script>
 

@@ -561,18 +561,57 @@
     </div>
 
     <!-- Save as Template Dialog -->
-    <el-dialog v-model="saveTemplateVisible" title="Save as Template" width="480px" :destroy-on-close="true">
+    <el-dialog v-model="saveTemplateVisible" title="Save as Flow Template" width="560px" :destroy-on-close="true">
       <el-form :model="saveTemplateForm" label-width="100px">
-        <el-form-item label="Name" required>
+        <el-form-item label="Target">
+          <el-radio-group v-model="saveTemplateForm.mode" @change="handleSaveTemplateTargetChange">
+            <el-radio-button label="create">Create New</el-radio-button>
+            <el-radio-button label="update">Update Existing</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="saveTemplateForm.mode === 'update'" label="Template" required>
+          <el-select
+            v-model="saveTemplateForm.templateId"
+            filterable
+            clearable
+            placeholder="Select template"
+            style="width: 100%"
+            :loading="saveTemplateOptionsLoading"
+            @change="handleSaveTemplateSelection"
+          >
+            <el-option
+              v-for="template in saveTemplateOptions"
+              :key="template.id"
+              :label="template.name"
+              :value="template.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="saveTemplateForm.mode === 'create'" label="Name" required>
           <el-input v-model="saveTemplateForm.name" placeholder="Template name" maxlength="100" />
         </el-form-item>
         <el-form-item label="Description">
           <el-input v-model="saveTemplateForm.description" type="textarea" :rows="3" placeholder="Description" />
         </el-form-item>
+        <el-form-item label="Binding">
+          <el-checkbox v-model="saveTemplateForm.autoBinding">
+            Auto-generate Checklist Binding
+          </el-checkbox>
+        </el-form-item>
+        <el-alert
+          v-if="saveTemplateForm.mode === 'update'"
+          type="warning"
+          :closable="false"
+          show-icon
+          class="save-template-alert"
+          title="This will replace the selected template content with the current flow."
+        />
       </el-form>
       <template #footer>
         <el-button @click="saveTemplateVisible = false">Cancel</el-button>
-        <el-button type="primary" :loading="saveTemplateLoading" @click="handleSaveTemplate">Save</el-button>
+        <el-button type="primary" :loading="saveTemplateLoading" @click="handleSaveTemplate">
+          {{ saveTemplateActionLabel }}
+        </el-button>
       </template>
     </el-dialog>
 
@@ -715,7 +754,7 @@ import { flowTemplateApi } from '../api/flow-template'
 import { engineApi } from '../api/engine'
 import { smlApi } from '../api/sml'
 import { flowFunctionApi } from '../api/flow-function'
-import type { FlowStepConfig, FlowFunction, FlowConstantVariable } from '../types'
+import type { FlowStepConfig, FlowFunction, FlowConstantVariable, FlowStepBinding, FlowTemplate } from '../types'
 import FlowNode from './flow-editor/FlowNode.vue'
 import ChecklistBindingProperties from './flow-editor/ChecklistBindingProperties.vue'
 import ReceiveProperties from './flow-editor/ReceiveProperties.vue'
@@ -843,7 +882,16 @@ function onFlowResizeUp() {
 // ===== Save as Template =====
 const saveTemplateVisible = ref(false)
 const saveTemplateLoading = ref(false)
-const saveTemplateForm = ref({ name: '', description: '' })
+const saveTemplateOptionsLoading = ref(false)
+const saveTemplateOptions = ref<FlowTemplate[]>([])
+const saveTemplateForm = ref({
+  mode: 'create' as 'create' | 'update',
+  templateId: null as number | null,
+  name: '',
+  description: '',
+  autoBinding: true,
+})
+const saveTemplateActionLabel = computed(() => saveTemplateForm.value.mode === 'update' ? 'Update Template' : 'Create Template')
 
 // ===== Function Library =====
 const flowFunctions = ref<FlowFunction[]>([])
@@ -1345,6 +1393,116 @@ function buildPersistPayload() {
     constantVariables: serializeConstantVariables(),
     steps,
   }
+}
+
+type PersistFlowStep = {
+  type: string
+  name: string
+  config: string
+}
+
+const queryVidKeywords = ['Accessmode', 'CJAvailable', 'Controlstate', 'Transferstate']
+
+function normalizeSmlValue(value: string): string {
+  const trimmed = value.trim()
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) return trimmed.slice(1, -1)
+  return trimmed
+}
+
+function extractSmlScalarValues(sml: string): string[] {
+  const values: string[] = []
+  const scalarRe = /<\s*(?:A|B|Bool|Boolean|F4|F8|I1|I2|I4|I8|U1|U2|U4|U8)\b(?:\s+\[\d+\])?\s+("[^"]*"|0x[0-9a-fA-F]+|-?\d+(?:\.\d+)?|True|False|[^>\s]+)[^>]*>/gi
+  let match: RegExpExecArray | null
+  while ((match = scalarRe.exec(sml)) !== null) {
+    values.push(normalizeSmlValue(match[1]))
+  }
+  return values
+}
+
+function extractSxFyFromSml(sml: string): string {
+  const match = sml.match(/\bS\s*(\d+)\s*F\s*(\d+)\b/i)
+  return match ? `S${match[1]}F${match[2]}` : ''
+}
+
+function inferQueryVidKeywords(step: PersistFlowStep, config: FlowStepConfig): string[] {
+  const haystack = `${step.name} ${config.smlName || ''} ${config.sml || ''}`.toLowerCase()
+  return queryVidKeywords.filter(keyword => haystack.includes(keyword.toLowerCase()))
+}
+
+function inferSendBinding(step: PersistFlowStep, config: FlowStepConfig): FlowStepBinding | null {
+  if (config.binding) return null
+
+  const sxFy = extractSxFyFromSml(config.sml || '')
+  if (sxFy === 'S1F3') {
+    const keywords = inferQueryVidKeywords(step, config)
+    if (keywords.length > 0) {
+      return { kind: 'queryVid', keywords }
+    }
+  }
+
+  if (sxFy === 'S6F11') {
+    const scalars = extractSmlScalarValues(config.sml || '')
+    if (scalars.length >= 2) {
+      return {
+        kind: 'event',
+        ...(scalars[0] ? { dataId: scalars[0] } : {}),
+      }
+    }
+  }
+
+  if (config.sml || config.smlId || config.smlName) {
+    return { kind: 'sendSmlByName' }
+  }
+
+  return null
+}
+
+function inferReceiveEventBinding(config: FlowStepConfig): FlowStepBinding | null {
+  if (config.binding || String(config.matchSxFy || '').toUpperCase() !== 'S6F11') return null
+
+  const nodeVariables = config.nodeVariables || []
+  const ceidVariable = nodeVariables.find(v => v.name.toLowerCase() === 'ceid')?.name ||
+    nodeVariables.find(v => v.indexPath === '1')?.name ||
+    'CEID'
+  const rule = (config.rules || []).find(r => r.variable === ceidVariable) || (config.rules || [])[0]
+
+  const extractVids = (config.flowVariables || [])
+    .map(v => v.name)
+    .filter(name => name && name.toLowerCase() !== ceidVariable.toLowerCase())
+
+  return {
+    kind: 'receiveEvent',
+    ceidVariable,
+    ...(typeof rule?.targetStepIdx === 'number' ? { targetStepIdx: rule.targetStepIdx } : {}),
+    ...(extractVids.length > 0 ? { extractVids } : {}),
+  }
+}
+
+function autoGenerateTemplateBindings(steps: PersistFlowStep[]): { steps: PersistFlowStep[]; generated: number } {
+  let generated = 0
+  const nextSteps = steps.map(step => {
+    let config: FlowStepConfig
+    try {
+      config = JSON.parse(step.config || '{}')
+    } catch {
+      return step
+    }
+
+    const binding = step.type === 'send'
+      ? inferSendBinding(step, config)
+      : step.type === 'receive'
+        ? inferReceiveEventBinding(config)
+        : null
+
+    if (!binding) return step
+    generated += 1
+    return {
+      ...step,
+      config: JSON.stringify({ ...config, binding }),
+    }
+  })
+
+  return { steps: nextSteps, generated }
 }
 
 async function finishFlowHydration() {
@@ -2408,9 +2566,13 @@ async function handleSave() {
 }
 
 function openSaveTemplateDialog() {
+  saveTemplateForm.value.mode = 'create'
+  saveTemplateForm.value.templateId = null
   saveTemplateForm.value.name = flowName.value + ' Template'
   saveTemplateForm.value.description = flowDescription.value
+  saveTemplateForm.value.autoBinding = true
   saveTemplateVisible.value = true
+  loadSaveTemplateOptions()
 }
 
 function onSaveDropdownCommand(command: string) {
@@ -2419,9 +2581,53 @@ function onSaveDropdownCommand(command: string) {
   }
 }
 
+async function loadSaveTemplateOptions() {
+  saveTemplateOptionsLoading.value = true
+  try {
+    const resp = await flowTemplateApi.getAll({ page: 1, pageSize: 1000 })
+    saveTemplateOptions.value = resp.data?.data?.data || []
+  } catch {
+    ElMessage.error('Failed to load templates')
+  } finally {
+    saveTemplateOptionsLoading.value = false
+  }
+}
+
+function handleSaveTemplateTargetChange(mode: 'create' | 'update') {
+  if (mode === 'create') {
+    saveTemplateForm.value.templateId = null
+    saveTemplateForm.value.name = flowName.value + ' Template'
+    saveTemplateForm.value.description = flowDescription.value
+    return
+  }
+  if (saveTemplateOptions.value.length === 0) {
+    loadSaveTemplateOptions()
+  }
+}
+
+async function handleSaveTemplateSelection(templateId: number | null) {
+  if (!templateId) return
+  try {
+    const resp = await flowTemplateApi.getByID(templateId)
+    const template = resp.data?.data || resp.data
+    if (!template) {
+      ElMessage.error('Template not found')
+      return
+    }
+    saveTemplateForm.value.name = template.name || ''
+    saveTemplateForm.value.description = template.description || ''
+  } catch {
+    ElMessage.error('Failed to load template')
+  }
+}
+
 async function handleSaveTemplate() {
-  if (!saveTemplateForm.value.name.trim()) {
+  if (saveTemplateForm.value.mode === 'create' && !saveTemplateForm.value.name.trim()) {
     ElMessage.warning('Template name is required')
+    return
+  }
+  if (saveTemplateForm.value.mode === 'update' && !saveTemplateForm.value.templateId) {
+    ElMessage.warning('Select a template')
     return
   }
   if (nodes.value.length === 0) {
@@ -2432,17 +2638,31 @@ async function handleSaveTemplate() {
   saveTemplateLoading.value = true
   try {
     const payload = buildPersistPayload()
-    await flowTemplateApi.create({
-      name: saveTemplateForm.value.name,
+    const bindingResult = saveTemplateForm.value.autoBinding
+      ? autoGenerateTemplateBindings(payload.steps)
+      : { steps: payload.steps, generated: 0 }
+    const selectedTemplate = saveTemplateOptions.value.find(template => template.id === saveTemplateForm.value.templateId)
+    const requestBody = {
+      name: saveTemplateForm.value.mode === 'update'
+        ? (selectedTemplate?.name || saveTemplateForm.value.name)
+        : saveTemplateForm.value.name,
       description: saveTemplateForm.value.description,
       commMode: payload.commMode,
       stepInterval: payload.stepInterval,
       edges: payload.edges,
-      steps: payload.steps,
-    })
+      steps: bindingResult.steps,
+    }
+    if (saveTemplateForm.value.mode === 'update' && saveTemplateForm.value.templateId) {
+      await flowTemplateApi.update(saveTemplateForm.value.templateId, requestBody)
+    } else {
+      await flowTemplateApi.create(requestBody)
+    }
     recordGraphHistory()
     saveTemplateVisible.value = false
-    ElMessage.success('Template saved')
+    const action = saveTemplateForm.value.mode === 'update' ? 'updated' : 'created'
+    ElMessage.success(bindingResult.generated > 0
+      ? `Template ${action}, ${bindingResult.generated} bindings generated`
+      : `Template ${action}`)
   } catch (e: unknown) {
     const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Save template failed'
     ElMessage.error(msg)

@@ -352,12 +352,12 @@
           <el-input :model-value="checklist.name" readonly />
         </el-form-item>
         <el-form-item label="Flow Template">
-          <el-select v-model="flowTemplateId" filterable placeholder="Select template" style="width: 100%" :loading="flowTemplateLoading">
+          <el-select v-model="flowTemplateId" filterable placeholder="Select template" style="width: 100%" :loading="flowTemplateLoading" @change="handleFlowTemplateChange">
             <el-option v-for="t in flowTemplates" :key="t.id" :label="t.name" :value="t.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="Flow Name">
-          <el-input v-model="flowName" placeholder="Generated flow name" maxlength="100" />
+          <el-input v-model="flowName" placeholder="Generated flow name" maxlength="100" @input="flowNameEdited = true" />
         </el-form-item>
         <el-form-item label="SML Source">
           <el-radio-group v-model="flowSMLMode">
@@ -583,6 +583,7 @@ const flowTemplateLoading = ref(false)
 const flowTemplates = ref<FlowTemplate[]>([])
 const flowTemplateId = ref<number | null>(null)
 const flowName = ref('')
+const flowNameEdited = ref(false)
 const flowFolderName = ref('')
 const flowSourceFolder = ref('SML demo')
 const flowSMLMode = ref<'generate' | 'existing'>('existing')
@@ -590,6 +591,8 @@ const flowForce = ref(false)
 const flowPublish = ref(false)
 const flowGenerating = ref(false)
 const flowTargetFolderExists = computed(() => smlRootFolders.value.includes(flowFolderName.value.trim()))
+
+const selectedFlowTemplate = computed(() => flowTemplates.value.find(t => t.id === flowTemplateId.value) || null)
 
 watch(flowSMLMode, (mode) => {
   if (mode === 'existing') {
@@ -1023,6 +1026,7 @@ const loadFlowTemplates = async () => {
     if (!flowTemplateId.value && flowTemplates.value.length > 0) {
       flowTemplateId.value = flowTemplates.value[0].id
     }
+    updateDefaultFlowName()
   } catch {
     flowTemplates.value = []
   } finally {
@@ -1030,10 +1034,37 @@ const loadFlowTemplates = async () => {
   }
 }
 
+function checklistFlowBaseName(): string {
+  const name = (checklist.value.name || `Checklist ${checklistId}`).trim()
+  return name.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').toUpperCase() || `CHECKLIST_${checklistId}`
+}
+
+function flowTemplateSuffix(templateName?: string): string {
+  const normalized = (templateName || '').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').toUpperCase()
+  if (normalized.includes('INIT')) return 'INIT'
+  if (normalized.includes('HOST')) return 'HOST'
+  if (normalized.includes('EQP')) return 'EQP'
+  return normalized.replace(/_?TEMPLATE$/, '') || 'FLOW'
+}
+
+function buildDefaultFlowName(template?: FlowTemplate | null): string {
+  return `${checklistFlowBaseName()}_${flowTemplateSuffix(template?.name)}`
+}
+
+function updateDefaultFlowName(force = false) {
+  if (!force && flowNameEdited.value) return
+  flowName.value = buildDefaultFlowName(selectedFlowTemplate.value)
+}
+
+function handleFlowTemplateChange() {
+  updateDefaultFlowName()
+}
+
 const handleOpenGenerateFlow = () => {
   const baseName = checklist.value.name || `Checklist ${checklistId}`
   const defaultFolder = `${baseName} SML`
-  flowName.value = `${baseName} Flow`
+  flowNameEdited.value = false
+  updateDefaultFlowName(true)
   flowFolderName.value = defaultFolder
   flowSourceFolder.value = 'SML demo'
   flowSMLMode.value = smlRootFolders.value.includes(defaultFolder) ? 'existing' : 'generate'

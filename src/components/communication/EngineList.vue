@@ -55,11 +55,18 @@
           <div class="engine-main-row">
             <span class="engine-name">{{ engine.engineName }}</span>
             <span class="engine-port">:{{ engine.port }}</span>
-          </div>
-          <div class="engine-meta-row">
-            <span>{{ engine.mode || '-' }}</span>
-            <span>{{ engine.ip }}:{{ engine.port }}</span>
-            <span>{{ getStatusText(engine.status) }}</span>
+            <el-tooltip placement="right" effect="dark" :show-after="200">
+              <template #content>
+                <div class="engine-tooltip">
+                  <div><span>Mode:</span> {{ engine.mode || '-' }}</div>
+                  <div><span>Address:</span> {{ engine.ip }}:{{ engine.port }}</div>
+                  <div><span>Status:</span> {{ getStatusText(engine.status) }}</div>
+                  <div><span>Device ID:</span> {{ engine.deviceId }}</div>
+                  <div v-if="engine.description"><span>Description:</span> {{ engine.description }}</div>
+                </div>
+              </template>
+              <el-icon class="engine-info-icon" @click.stop><InfoFilled /></el-icon>
+            </el-tooltip>
           </div>
         </div>
         <div class="engine-actions">
@@ -105,7 +112,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
-import { Refresh, Search, VideoPlay, VideoPause, Setting, ChatLineRound } from '@element-plus/icons-vue'
+import { Refresh, Search, VideoPlay, VideoPause, Setting, ChatLineRound, InfoFilled } from '@element-plus/icons-vue'
 
 export interface EngineItem {
   id: number
@@ -234,7 +241,7 @@ const handleToggleLog = (engine: EngineItem) => {
 .engine-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 6px 8px;
 }
 
 .engine-item {
@@ -302,40 +309,22 @@ const handleToggleLog = (engine: EngineItem) => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
-  gap: 3px;
   flex: 1;
   min-width: 0;
-  padding: 8px;
+  padding: 7px 8px;
 }
 
-.engine-main-row,
-.engine-meta-row {
+.engine-main-row {
   display: flex;
   align-items: center;
   width: 100%;
   min-width: 0;
-}
-
-.engine-main-row {
   gap: 8px;
-}
-
-.engine-meta-row {
-  gap: 6px;
-  color: #909399;
-  font-size: 11px;
-  line-height: 1.2;
-}
-
-.engine-meta-row span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .engine-name {
   font-weight: 500;
+  line-height: 24px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -345,6 +334,30 @@ const handleToggleLog = (engine: EngineItem) => {
   color: #666;
   font-size: 12px;
   flex-shrink: 0;
+}
+
+.engine-info-icon {
+  color: #909399;
+  cursor: help;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.engine-info-icon:hover {
+  color: #409eff;
+}
+
+.engine-tooltip {
+  display: grid;
+  gap: 4px;
+  max-width: 260px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.engine-tooltip span {
+  color: #cfd3dc;
+  font-weight: 600;
 }
 
 .engine-actions {

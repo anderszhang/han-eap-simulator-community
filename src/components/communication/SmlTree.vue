@@ -32,6 +32,17 @@
       </el-input>
     </div>
     <div v-if="showFilter" class="filter-bar">
+      <el-select
+        :model-value="selectedUserId ?? null"
+        placeholder="My Files"
+        clearable
+        size="small"
+        class="user-filter-select"
+        @change="handleUserFilterChange"
+      >
+        <el-option label="All Users" :value="null" />
+        <el-option v-for="user in userOptions" :key="user.id" :label="user.username" :value="user.id" />
+      </el-select>
       <el-radio-group v-model="nodeTypeFilter" size="small" @change="handleNodeTypeFilterChange">
         <el-radio-button value="">All</el-radio-button>
         <el-radio-button value="EQP">EQP</el-radio-button>
@@ -116,6 +127,8 @@ interface Props {
   treeData: SMLNode[]
   selectedFile: SMLNode | null
   expandedKeys?: number[]
+  userOptions?: { id: number; username: string }[]
+  selectedUserId?: number | null
 }
 
 interface Emits {
@@ -123,10 +136,14 @@ interface Emits {
   (e: 'node-dblclick', node: SMLNode): void
   (e: 'refresh'): void
   (e: 'update:expandedKeys', keys: number[]): void
+  (e: 'update:selectedUserId', value: number | null): void
+  (e: 'user-change', value: number | null): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  expandedKeys: () => []
+  expandedKeys: () => [],
+  userOptions: () => [],
+  selectedUserId: null
 })
 
 const emit = defineEmits<Emits>()
@@ -309,6 +326,12 @@ const handleNodeTypeFilterChange = () => {
   treeKey.value++
 }
 
+const handleUserFilterChange = (value: number | null | '') => {
+  const userId = value === '' ? null : value
+  emit('update:selectedUserId', userId)
+  emit('user-change', userId)
+}
+
 const handleAddSubmit = async () => {
   try {
     await addFormRef.value.validate()
@@ -366,9 +389,17 @@ watch(() => props.expandedKeys, (keys) => {
 }
 
 .filter-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   padding: 6px 12px;
   border-bottom: 1px solid #e4e7ed;
   background-color: #fafafa;
+}
+
+.user-filter-select {
+  width: 120px;
+  flex-shrink: 0;
 }
 
 .node-type-tag {

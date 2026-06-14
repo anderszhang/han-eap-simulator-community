@@ -81,6 +81,10 @@
           <h3>{{ getPageTitle() }}</h3>
         </div>
         <div class="header-right">
+          <el-button class="help-link" text size="small" @click="openHelp">
+            <el-icon><QuestionFilled /></el-icon>
+            <span>Help</span>
+          </el-button>
           <el-dropdown @command="handleCommand">
             <span class="el-dropdown-link">
               <el-icon class="user-icon"><UserFilled /></el-icon>
@@ -241,6 +245,10 @@ const handleCommand = (command: string): void => {
   } else if (command === 'changePassword') {
     openPasswordDialog()
   }
+}
+
+const openHelp = () => {
+  window.open('/help/index.html', '_blank', 'noopener,noreferrer')
 }
 
 const openPasswordDialog = () => {
@@ -509,6 +517,18 @@ onMounted(() => {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #606266;
+}
+
+.help-link:hover {
+  color: var(--eap-primary);
 }
 
 .user-icon {
