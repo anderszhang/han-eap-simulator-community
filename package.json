@@ -1,7 +1,7 @@
 {
-  "name": "hh-eap-simulator-community",
+  "name": "han-eap-simulator-community",
   "version": "1.0.0",
-  "description": "Public frontend for HH EAP Simulator",
+  "description": "Public frontend for Han Eap Simulator",
   "main": "index.js",
   "scripts": {
     "dev": "vite",

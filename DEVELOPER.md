@@ -1,6 +1,6 @@
 # Developer Guide
 
-This document covers local development for HH EAP Simulator Web UI.
+This document covers local development for Han Eap Simulator Web UI.
 
 ## Project Scope
 
@@ -32,7 +32,7 @@ Excluded:
 
 ## Backend Requirement
 
-The frontend needs a running HH EAP Simulator backend.
+The frontend needs a running Han Eap Simulator backend.
 
 Default development API endpoint:
 

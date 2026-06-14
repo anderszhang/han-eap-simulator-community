@@ -4,7 +4,7 @@
       <div class="logo">
         <img v-if="isCollapsed" class="logo-icon" src="/icon.svg" :alt="`${APP_INFO.name} logo`" />
         <template v-else>
-          <div class="logo-title">HH EAP Simulator</div>
+          <div class="logo-title">Han Eap Simulator</div>
           <div class="logo-subtitle">Equipment Automation</div>
         </template>
       </div>
@@ -213,7 +213,7 @@ watch(() => route.path, (path) => {
         '/checklist': 'Checklist',
         '/db-admin': 'Database Admin'
      }
-   return titles[path] || 'HH EAP Simulator'
+   return titles[path] || 'Han Eap Simulator'
  }
 
 const showPwdDialog = ref(false)

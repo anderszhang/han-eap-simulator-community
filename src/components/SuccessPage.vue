@@ -10,7 +10,7 @@
       
       <div class="success-header">
         <h1>登录成功！</h1>
-        <p>欢迎来到 HH EAP Simulator 系统</p>
+        <p>欢迎来到 Han Eap Simulator 系统</p>
       </div>
       
       <div class="user-info" v-if="user">

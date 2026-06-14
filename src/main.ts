@@ -6,6 +6,7 @@ import './styles/variables.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import LoginPage from './components/LoginPage.vue'
+import SetupAdminPage from './components/SetupAdminPage.vue'
 import SuccessPage from './components/SuccessPage.vue'
 import Layout from './components/Layout.vue'
 import EnginePage from './components/EnginePage.vue'
@@ -20,9 +21,11 @@ import ChecklistPage from './components/ChecklistPage.vue'
 import ChecklistDetailPage from './components/ChecklistDetailPage.vue'
 import VendorModelPage from './components/VendorModelPage.vue'
 import DatabaseAdminPage from './components/DatabaseAdminPage.vue'
+import api from './utils/api'
 
 const routes = [
   { path: '/', component: LoginPage },
+  { path: '/setup', component: SetupAdminPage },
   { path: '/success', component: SuccessPage },
   {
     path: '/',
@@ -50,10 +53,30 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const isLoggedIn = !!localStorage.getItem('token')
-  const publicPaths = ['/', '/success']
+  const publicPaths = ['/', '/setup', '/success']
   const isPublic = publicPaths.includes(to.path)
+
+  try {
+    const resp = await api.get('/setup/status')
+    const setupRequired = !!resp.data?.data?.setupRequired
+    if (setupRequired && to.path !== '/setup') {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      next('/setup')
+      return
+    }
+    if (!setupRequired && to.path === '/setup') {
+      next(isLoggedIn ? '/engine' : '/')
+      return
+    }
+  } catch {
+    if (to.path !== '/') {
+      next('/')
+      return
+    }
+  }
 
   if (!isLoggedIn && !isPublic) {
     next('/')

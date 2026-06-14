@@ -652,72 +652,117 @@
               </div>
             </el-form-item>
           </el-form>
-          <div class="fn-edit-hint">
-            Available: <code>main(params)</code> <code>GoUtils.parseLastRecv(path)</code> <code>GoUtils.formatDate(Date.now(), "YYYYMMDDHHmmss")</code> <code>GoUtils.log(...)</code> <code>vars.x</code> <code>params.name</code>
-          </div>
           <div ref="fnEditorRef" class="fn-editor-container"></div>
         </div>
         <div class="fn-dialog-right" :class="{ collapsed: fnTestPanelCollapsed }">
           <div v-if="!fnTestPanelCollapsed" class="fn-test-panel-wrapper">
             <div class="fn-test-panel">
               <div class="fn-test-header">
-                <span class="fn-test-title">Test Function</span>
+                <span class="fn-test-title">{{ fnRightActiveTab === 'test' ? 'Test Function' : 'System APIs' }}</span>
                 <div class="fn-test-header-actions">
-                  <el-button type="primary" size="small" @click="runFunctionTest" :loading="fnTestLoading">Run</el-button>
-                </div>
-              </div>
-              <el-form label-width="80px" size="small">
-                <el-form-item label="SML Source">
-                  <el-select-v2
-                    v-model="selectedTestSmlId"
-                    :options="smlFlatOptions"
-                    placeholder="Quick select from SML library..."
+                  <el-button
+                    v-if="fnRightActiveTab === 'test'"
+                    type="primary"
                     size="small"
-                    clearable
-                    style="width: 100%"
-                    @change="onTestSmlSelected"
-                  />
-                </el-form-item>
-                <el-form-item label="Sample SML">
-                  <el-input v-model="fnTestSampleSML" type="textarea" :rows="15" placeholder="Paste received SML here..." />
-                  <div class="fn-test-hint">GoUtils.parseLastRecv() parses from the SML above (lastRecv context)</div>
-                </el-form-item>
-                <el-form-item label="Vars">
-                  <div class="fn-test-vars">
-                    <div v-for="(_key, idx) in fnTestVarKeys" :key="idx" class="fn-test-var-row">
-                      <el-input v-model="fnTestVarKeys[idx]" placeholder="name" size="small" style="width: 100px" />
-                      <el-input v-model="fnTestVars[fnTestVarKeys[idx]]" placeholder="value" size="small" style="flex: 1" />
-                      <el-button type="danger" :icon="Delete" circle size="small" @click="fnTestVarKeys.splice(idx, 1)" />
-                    </div>
-                    <el-button type="primary" link size="small" @click="fnTestVarKeys.push('')">
-                      <el-icon><Plus /></el-icon> Add Var
-                    </el-button>
-                  </div>
-                </el-form-item>
-              </el-form>
-              <div v-if="fnTestError" class="fn-test-error">
-                <el-alert :title="fnTestError" type="error" :closable="false" />
-              </div>
-              <div v-if="fnTestResult !== '' || fnTestLogs.length > 0" class="fn-test-result">
-                <div v-if="fnTestResult !== ''" class="fn-test-result-section">
-                  <div class="fn-test-label">Result:</div>
-                  <pre class="result-pre">{{ formattedTestResult }}</pre>
+                    @click="runFunctionTest"
+                    :loading="fnTestLoading"
+                  >
+                    Run
+                  </el-button>
                 </div>
-                <div v-if="fnTestLogs.length > 0" class="fn-test-result-section">
-                  <div class="fn-test-label">Logs:</div>
-                  <pre class="logs-pre">{{ fnTestLogs.join('\n') }}</pre>
+              </div>
+              <div v-if="fnRightActiveTab === 'test'" class="fn-tool-content">
+                <el-form label-width="80px" size="small">
+                  <el-form-item label="SML Source">
+                    <el-tree-select
+                      v-model="selectedTestSmlId"
+                      :data="smlTestTreeSelectData"
+                      :props="{ label: 'name', children: 'children', disabled: 'disabled' }"
+                      node-key="id"
+                      placeholder="Select SML from library..."
+                      style="width: 100%"
+                      clearable
+                      filterable
+                      check-strictly
+                      :render-after-expand="false"
+                      @change="onTestSmlSelected"
+                    />
+                  </el-form-item>
+                  <el-form-item label="Sample SML">
+                    <el-input v-model="fnTestSampleSML" type="textarea" :rows="15" placeholder="Paste received SML here..." />
+                    <div class="fn-test-hint">GoUtils.parseLastRecv() parses from the SML above (lastRecv context)</div>
+                  </el-form-item>
+                  <el-form-item label="Vars">
+                    <div class="fn-test-vars">
+                      <div v-for="(_key, idx) in fnTestVarKeys" :key="idx" class="fn-test-var-row">
+                        <el-input v-model="fnTestVarKeys[idx]" placeholder="name" size="small" style="width: 100px" />
+                        <el-input v-model="fnTestVars[fnTestVarKeys[idx]]" placeholder="value" size="small" style="flex: 1" />
+                        <el-button type="danger" :icon="Delete" circle size="small" @click="fnTestVarKeys.splice(idx, 1)" />
+                      </div>
+                      <el-button type="primary" link size="small" @click="fnTestVarKeys.push('')">
+                        <el-icon><Plus /></el-icon> Add Var
+                      </el-button>
+                    </div>
+                  </el-form-item>
+                </el-form>
+                <div v-if="fnTestError" class="fn-test-error">
+                  <el-alert :title="fnTestError" type="error" :closable="false" />
+                </div>
+                <div v-if="fnTestResult !== '' || fnTestLogs.length > 0" class="fn-test-result">
+                  <div v-if="fnTestResult !== ''" class="fn-test-result-section">
+                    <div class="fn-test-label">Result:</div>
+                    <pre class="result-pre">{{ formattedTestResult }}</pre>
+                  </div>
+                  <div v-if="fnTestLogs.length > 0" class="fn-test-result-section">
+                    <div class="fn-test-label">Logs:</div>
+                    <pre class="logs-pre">{{ fnTestLogs.join('\n') }}</pre>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="fn-tool-content">
+                <div class="fn-api-panel" aria-label="System APIs available in function scripts">
+                  <div class="fn-api-panel-head">
+                    <span class="fn-api-title">System APIs</span>
+                    <span class="fn-api-subtitle">Available in function scripts</span>
+                  </div>
+                  <div class="fn-api-groups">
+                    <div v-for="group in systemApiGroups" :key="group.name" class="fn-api-group">
+                      <span class="fn-api-group-name">{{ group.name }}</span>
+                      <div class="fn-api-tags">
+                        <el-tooltip
+                          v-for="api in group.items"
+                          :key="api.code"
+                          :content="api.description"
+                          placement="top"
+                        >
+                          <el-tag class="fn-api-tag" size="small" effect="plain" round>
+                            {{ api.code }}
+                          </el-tag>
+                        </el-tooltip>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
           <div class="activity-bar fn-test-activity-bar">
-            <el-tooltip :content="fnTestPanelCollapsed ? 'Expand Test Panel' : 'Collapse Test Panel'" placement="left">
+            <el-tooltip content="Test" placement="left">
               <div
                 class="activity-icon"
-                :class="{ active: !fnTestPanelCollapsed }"
-                @click="fnTestPanelCollapsed = !fnTestPanelCollapsed"
+                :class="{ active: !fnTestPanelCollapsed && fnRightActiveTab === 'test' }"
+                @click="openFnRightTab('test')"
               >
                 <el-icon><VideoPlay /></el-icon>
+              </div>
+            </el-tooltip>
+            <el-tooltip content="APIs" placement="left">
+              <div
+                class="activity-icon"
+                :class="{ active: !fnTestPanelCollapsed && fnRightActiveTab === 'apis' }"
+                @click="openFnRightTab('apis')"
+              >
+                <el-icon><Tickets /></el-icon>
               </div>
             </el-tooltip>
           </div>
@@ -913,6 +958,16 @@ const fnTestLoading = ref(false)
 const fnTestPanelCollapsed = ref(true)
 const fnTestVarKeys = ref<string[]>([])
 const selectedTestSmlId = ref<number | null>(null)
+const fnRightActiveTab = ref<'test' | 'apis'>('test')
+
+function openFnRightTab(tab: 'test' | 'apis') {
+  if (!fnTestPanelCollapsed.value && fnRightActiveTab.value === tab) {
+    fnTestPanelCollapsed.value = true
+    return
+  }
+  fnRightActiveTab.value = tab
+  fnTestPanelCollapsed.value = false
+}
 
 function extractScriptRefs(script: string): { vars: string[]; params: string[] } {
   const vars = new Set<string>()
@@ -970,18 +1025,51 @@ const formattedTestResult = computed(() => {
   }
 })
 
-const smlFlatOptions = computed(() => {
-  const options: { value: number; label: string }[] = []
-  function walk(nodes: any[]) {
-    for (const n of nodes || []) {
-      if (n.type === 'sml') {
-        options.push({ value: n.id, label: n.name })
-      }
-      if (n.children) walk(n.children)
-    }
+const systemApiGroups = [
+  {
+    name: 'Entry',
+    items: [
+      { code: 'main(params)', description: 'Required entry function. Return value becomes the function step result.' },
+    ],
+  },
+  {
+    name: 'SML',
+    items: [
+      { code: 'GoUtils.parseLastRecv(path)', description: 'Read a value from the test SML / lastRecv context by path.' },
+    ],
+  },
+  {
+    name: 'Time',
+    items: [
+      { code: 'GoUtils.formatDate(Date.now(), "YYYYMMDDHHmmss")', description: 'Format a timestamp with the specified pattern.' },
+    ],
+  },
+  {
+    name: 'Debug',
+    items: [
+      { code: 'GoUtils.log(...)', description: 'Write diagnostic logs to the function test output.' },
+    ],
+  },
+  {
+    name: 'Context',
+    items: [
+      { code: 'vars.x', description: 'Read flow variables available to the current execution.' },
+      { code: 'params.name', description: 'Read parameters passed to the function.' },
+    ],
+  },
+]
+
+const smlTestTreeSelectData = computed(() => {
+  const addDisabled = (nodes: any[]): any[] => {
+    return (nodes || [])
+      .filter(node => node.type === 'folder' || node.type === 'sml')
+      .map(node => ({
+        ...node,
+        disabled: node.type === 'folder',
+        children: node.children && node.children.length > 0 ? addDisabled(node.children) : undefined,
+      }))
   }
-  walk(smlTreeData.value)
-  return options
+  return addDisabled(smlTreeData.value)
 })
 
 // ===== SML Inline Editor =====
@@ -3400,24 +3488,84 @@ onUnmounted(() => {
   gap: 4px;
 }
 
+.fn-tool-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
 .fn-edit-form :deep(.el-form-item) {
   margin-bottom: 8px;
 }
 
-.fn-edit-hint {
-  font-size: 11px;
-  color: #909399;
-  margin-bottom: 6px;
-  line-height: 1.4;
-  flex-shrink: 0;
+.fn-api-panel {
+  padding: 10px 12px;
+  border: 1px solid #dbe7f5;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
 }
 
-.fn-edit-hint code {
-  background: #f5f7fa;
-  padding: 1px 4px;
-  border-radius: 3px;
+.fn-api-panel-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.fn-api-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1f4f7a;
+  letter-spacing: 0.01em;
+}
+
+.fn-api-subtitle {
   font-size: 11px;
-  color: #409eff;
+  color: #7a8da3;
+}
+
+.fn-api-groups {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.fn-api-group {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.fn-api-group-name {
+  flex: 0 0 auto;
+  padding-top: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #7a8da3;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fn-api-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fn-api-tag {
+  max-width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  color: #24577f;
+  border-color: #b9d5ef;
+  background-color: rgba(255, 255, 255, 0.72);
+  cursor: help;
+}
+
+.fn-api-tag :deep(.el-tag__content) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .fn-editor-container {
@@ -3433,6 +3581,9 @@ onUnmounted(() => {
   border: 1px solid #e4e7ed;
   border-radius: 4px;
   background: #f5f7fa;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 .fn-test-hint {

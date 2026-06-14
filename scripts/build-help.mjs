@@ -162,7 +162,7 @@ fs.writeFileSync(outPath, `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HH EAP Simulator Help</title>
+  <title>Han Eap Simulator Help</title>
   <style>
     :root {
       color: #1f2937;
