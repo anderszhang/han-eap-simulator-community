@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Han Eap Simulator Help</title>
+  
+  <style>
+    :root {
+      color: #1f2937;
+      background: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body { margin: 0; }
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+      background: #fff;
+      min-height: 100vh;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    }
+    .language-switch {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .language-link {
+      color: #2563eb;
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .language-link:hover {
+      text-decoration: underline;
+      background: #eff6ff;
+    }
+    .language-link.active {
+      color: #1f2937;
+      font-weight: 600;
+      background: #e5e7eb;
+      pointer-events: none;
+    }
+    .language-separator { color: #d1d5db; }
+    .landing-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .landing-card {
+      display: block;
+      padding: 24px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 500;
+      background: #f9fafb;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .landing-card:hover {
+      background: #fff;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+      text-decoration: none;
+    }
+    h1 { margin-top: 0; font-size: 32px; }
+    h2 { margin-top: 38px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    p, li { line-height: 1.75; }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img {
+      display: block;
+      max-width: 100%;
+      margin: 16px 0 28px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+    }
+    code {
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f3f4f6;
+      color: #b45309;
+    }
+    pre {
+      overflow: auto;
+      padding: 16px;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    th { background: #f9fafb; }
+  </style>
+</head>
+<body>
+  <main>
+<nav class="language-switch">
+        <a class="language-link" href="zh-CN.html">中文</a> <span class="language-separator">|</span> <a class="language-link active" href="en.html">English</a>
+       </nav>
+<h1>Han Eap Simulator Web UI</h1>
+<p>Han Eap Simulator Web UI is the frontend for a semiconductor equipment automation simulation system. It is designed for SECS/GEM, HSMS, and EAP integration workflows, with tools for equipment connection management, SML message maintenance, manual send/receive operations, auto-reply rules, visual Flow orchestration, and Checklist-driven SML/Flow generation.</p>
+<p>This repository contains only the frontend source code. Backend services, databases, migration scripts, seed data, checklist templates, and complete application distributions are maintained separately by the main project.</p>
+<p>中文版本: <a href="zh-CN.html">README.zh-CN.md</a></p>
+<h2>Highlights</h2>
+<ul>
+<li><strong>Built for semiconductor EAP workflows</strong>: Models HSMS connections, SECS/GEM messages, SML files, and VID/RPTID/CEID checklist data.</li>
+<li><strong>Visual Flow orchestration</strong>: Configure Send, Receive, Delay, and Function steps as graph nodes, with rule-based transitions, variable extraction, fixed variables, and runner debugging.</li>
+<li><strong>Flexible variable system</strong>: A Flow can declare variables required before execution, extract variables from received SECS messages by path, or compute new variables through JavaScript/TypeScript functions.</li>
+<li><strong>Checklist-driven generation</strong>: Generate Dynamic Report SML from equipment checklists, or generate equipment-specific Flows from Flow Templates.</li>
+<li><strong>Manual SECS workbench</strong>: Select an Engine, browse SML files, inspect message content, send messages, and observe logs in one workspace.</li>
+<li><strong>Reusable templates</strong>: Save Flows as Flow Templates and reuse them across checklists, with automatic binding to checklist events and variable definitions.</li>
+</ul>
+<h2>Screenshots</h2>
+<h3>Engine Management</h3>
+<p>Maintain active/passive HSMS Engines, IP/port settings, Device ID, Checklist binding, and runtime status.</p>
+<p><img src="images/engine-overview.png" alt="Engine Management"></p>
+<h3>SML Library</h3>
+<p>Manage SML folders and message content in a tree structure. SML files can be reused by Manual SECS, AutoReply, and Flow Send nodes.</p>
+<p><img src="images/sml-library.png" alt="SML Library"></p>
+<h3>Checklist Configuration</h3>
+<p>Maintain CEID, RPTID, VID, Data Format, and ValueMap definitions, then generate SML or Flow artifacts from the checklist.</p>
+<p><img src="images/checklist-detail.png" alt="Checklist Configuration"></p>
+<h3>Flow Editor</h3>
+<p>Build automation workflows with graph nodes, rule edges, Receive variable extraction, Flow Variables, the Flow runner, and Checklist Binding.</p>
+<p><img src="images/flow-editor.png" alt="Flow Editor"></p>
+<h3>Manual SECS</h3>
+<p>A manual SECS workbench for debugging: choose an Engine and SML file on the left, inspect communication logs in the center, and view or edit SML content on the right.</p>
+<p><img src="images/manual-secs.png" alt="Manual SECS"></p>
+<h3>Auto SECS</h3>
+<p>Run a published Flow against a selected Engine, with live Flow node status, SECS communication logs, and SML details. This is useful for initialization, Dynamic Report configuration, and equipment integration playback.</p>
+<p><img src="images/auto-secs.png" alt="Auto SECS"></p>
+<h2>Core Features</h2>
+<h3>Engine</h3>
+<ul>
+<li>Create, edit, start, and stop HSMS Engines.</li>
+<li>Support both active and passive connection modes.</li>
+<li>Display runtime status, connection state, Device ID, Checklist binding, and creator.</li>
+</ul>
+<h3>SML</h3>
+<ul>
+<li>Manage SML messages by folder.</li>
+<li>Support template folders and Host/EQP type markers.</li>
+<li>Reuse SML files in Manual SECS, AutoReply, and Flow.</li>
+</ul>
+<h3>Manual SECS</h3>
+<ul>
+<li>Send SML messages through a selected Engine.</li>
+<li>Subscribe to real-time logs and send/receive records.</li>
+<li>Search Engines and SML files in a three-column workspace.</li>
+</ul>
+<h3>Auto SECS</h3>
+<ul>
+<li>Execute a published Flow against a selected Engine.</li>
+<li>Track node execution status in the graph.</li>
+<li>Inspect complete SECS send/receive logs and Flow step results.</li>
+</ul>
+<h3>AutoReply</h3>
+<ul>
+<li>Configure automatic replies for specific incoming SxFy messages.</li>
+<li>Support variable path extraction and conditional matching.</li>
+<li>Simulate standard response behavior from either equipment-side or host-side workflows.</li>
+</ul>
+<h3>Flow</h3>
+<ul>
+<li>Build graph-based Send, Receive, Delay, and Function workflows.</li>
+<li>Declare Flow Variables with required inputs and default values before execution.</li>
+<li>Extract values from received SECS messages by index path, such as CarrierID, PortID, and ACK.</li>
+<li>Use JavaScript/TypeScript functions to compute variables from existing variables, message content, or function return values.</li>
+<li>Use <code>{VariableName}</code> placeholders in Send nodes to inject variables into SML messages.</li>
+<li>Support fixed-value and default-value variables for batch reuse of the same Flow.</li>
+<li>Support variable extraction, computed variables, and rule transitions in Receive nodes.</li>
+<li>Assign variables before execution from the Flow Run page.</li>
+<li>Combine Flow Templates with Checklist Binding to generate equipment-specific Flows.</li>
+</ul>
+<h3>Checklist</h3>
+<ul>
+<li>Maintain CEID/RPTID/VID mappings.</li>
+<li>Import checklist data from Excel.</li>
+<li>Generate Dynamic Report SML from Checklist data.</li>
+<li>Generate equipment-specific Flows from Checklist + Flow Template, such as <code>A029_HOST</code> and <code>A029_INIT</code>.</li>
+</ul>
+<h2>Quick Start</h2>
+<ol><li>Open the application URL and sign in.</li>
+<li>Configure or start an HSMS connection from the Engine page.</li>
+<li>Maintain common SECS messages from the SML page.</li>
+<li>Select an Engine and SML file in Manual SECS for manual debugging.</li>
+<li>Import or maintain CEID/RPTID/VID definitions from the Checklist page.</li>
+<li>Create or edit automation Flows, or generate equipment-specific Flows from Checklist + Flow Template.</li>
+<li>Select an Engine and a published Flow in Auto SECS to run automated tests.</li></ol>
+<p>New databases open a first-run setup page. Create the password for the built-in administrator account there:</p>
+<pre><code class="language-text">admin / &lt;password-created-in-first-run-setup&gt;</code></pre>
+<h2>Local Development</h2>
+<pre><code class="language-bash">npm install
+npm run dev
+npm run build
+npm run type-check</code></pre>
+<p>The Vite development server usually runs at <code>http://localhost:3000</code>. The backend API base URL is controlled by runtime frontend configuration and <code>src/utils/api.ts</code>; in local development it usually points to <code>http://localhost:8080/api</code>.</p>
+<h2>Developer Documentation</h2>
+<p>See <a href="DEVELOPER.md">DEVELOPER.md</a> for local development, environment variables, common commands, the technology stack, and repository boundaries.</p>
+<h2>License</h2>
+<p>The frontend source code and frontend documentation in this repository are licensed under the MIT License. Backend source code, prebuilt backend binaries, full application distributions, database migrations, seed datasets, and checklist templates are excluded and require separate distribution terms.</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Han Eap Simulator Help</title>
+  
+  <style>
+    :root {
+      color: #1f2937;
+      background: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body { margin: 0; }
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+      background: #fff;
+      min-height: 100vh;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    }
+    .language-switch {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .language-link {
+      color: #2563eb;
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .language-link:hover {
+      text-decoration: underline;
+      background: #eff6ff;
+    }
+    .language-link.active {
+      color: #1f2937;
+      font-weight: 600;
+      background: #e5e7eb;
+      pointer-events: none;
+    }
+    .language-separator { color: #d1d5db; }
+    .landing-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .landing-card {
+      display: block;
+      padding: 24px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 500;
+      background: #f9fafb;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .landing-card:hover {
+      background: #fff;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+      text-decoration: none;
+    }
+    h1 { margin-top: 0; font-size: 32px; }
+    h2 { margin-top: 38px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    p, li { line-height: 1.75; }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img {
+      display: block;
+      max-width: 100%;
+      margin: 16px 0 28px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+    }
+    code {
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f3f4f6;
+      color: #b45309;
+    }
+    pre {
+      overflow: auto;
+      padding: 16px;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    th { background: #f9fafb; }
+  </style>
+</head>
+<body>
+  <main>
+<nav class="language-switch">
+        <a class="language-link active" href="zh-CN.html">中文</a> <span class="language-separator">|</span> <a class="language-link" href="en.html">English</a>
+       </nav>
+<h1>Han Eap Simulator Web UI</h1>
+<p>Han Eap Simulator Web UI 是半导体设备自动化模拟系统的前端界面。它面向 SECS/GEM、HSMS、EAP 联调场景，提供设备连接管理、SML 报文维护、手动收发、自动回复、可视化 Flow 编排，以及 Checklist 驱动的 SML/Flow 生成能力。</p>
+<p>本仓库只包含前端源码。后端服务、数据库、迁移脚本、种子数据、Checklist 模板和完整发布包由主项目单独维护。</p>
+<p>English version: <a href="en.html">README.en.md</a></p>
+<h2>项目特色</h2>
+<ul>
+<li><strong>面向半导体 EAP 场景</strong>：围绕 HSMS 连接、SECS/GEM 报文、SML 文件、VID/RPTID/CEID Checklist 建模。</li>
+<li><strong>可视化 Flow 编排</strong>：通过图形节点配置 Send、Receive、Delay、Function 步骤，支持规则跳转、变量提取、固定变量和运行器调试。</li>
+<li><strong>灵活变量体系</strong>：Flow 可以声明运行前需要输入的变量，也可以从 Receive 节点收到的报文中按路径提取变量，或通过 JavaScript/TypeScript 函数计算生成新的变量。</li>
+<li><strong>Checklist 驱动生成</strong>：从设备 Checklist 生成 Dynamic Report SML，也可以基于 Flow Template 生成特定设备的 Flow。</li>
+<li><strong>Manual SECS 工作台</strong>：同一页面完成 Engine 选择、SML 文件浏览、报文内容查看、发送和日志观察。</li>
+<li><strong>模板化复用</strong>：Flow 可以保存为 Flow Template，并在不同 Checklist 下复用，自动绑定 Checklist 中的事件和变量定义。</li>
+</ul>
+<h2>界面预览</h2>
+<h3>Engine 管理</h3>
+<p>维护主动/被动 HSMS Engine、IP/端口、Device ID、关联 Checklist，并查看运行状态。</p>
+<p><img src="images/engine-overview.png" alt="Engine 管理"></p>
+<h3>SML 文件库</h3>
+<p>以树形结构管理 SML 文件夹和报文内容，可用于手动发送、自动回复和 Flow Send 节点。</p>
+<p><img src="images/sml-library.png" alt="SML 文件库"></p>
+<h3>Checklist 配置</h3>
+<p>维护设备的 CEID、RPTID、VID、Data Format 和 ValueMap，并可一键生成 SML 或 Flow。</p>
+<p><img src="images/checklist-detail.png" alt="Checklist 配置"></p>
+<h3>Flow 图形编辑器</h3>
+<p>通过节点图配置自动化流程，支持规则连线、Receive 变量提取、Flow Variables、运行器和 Checklist Binding。</p>
+<p><img src="images/flow-editor.png" alt="Flow 图形编辑器"></p>
+<h3>Manual SECS</h3>
+<p>面向调试人员的手动 SECS 工作台：左侧选择 Engine 和 SML 文件，中间查看通信日志，右侧查看或编辑 SML 内容。</p>
+<p><img src="images/manual-secs.png" alt="Manual SECS"></p>
+<h3>Auto SECS</h3>
+<p>选择 Engine 和 Flow 后执行自动化流程，实时展示 Flow 节点执行状态、SECS 收发日志和 SML 明细，适合初始化、Dynamic Report 配置和设备联调回放。</p>
+<p><img src="images/auto-secs.png" alt="Auto SECS"></p>
+<h2>核心功能</h2>
+<h3>Engine</h3>
+<ul>
+<li>新增、编辑、启动、停止 HSMS Engine。</li>
+<li>支持 active/passive 两种连接模式。</li>
+<li>显示运行态、连接态、Device ID、关联 Checklist 和创建者。</li>
+</ul>
+<h3>SML</h3>
+<ul>
+<li>按文件夹管理 SML 报文。</li>
+<li>支持模板文件夹、Host/EQP 类型标记。</li>
+<li>可被 Manual SECS、AutoReply 和 Flow 复用。</li>
+</ul>
+<h3>Manual SECS</h3>
+<ul>
+<li>选择 Engine 后发送 SML。</li>
+<li>订阅实时日志和收发记录。</li>
+<li>支持 Engine 搜索、SML 文件搜索和三栏工作区。</li>
+</ul>
+<h3>Auto SECS</h3>
+<ul>
+<li>选择已发布 Flow 并绑定 Engine 执行。</li>
+<li>在图形区跟踪节点执行状态。</li>
+<li>在日志区查看完整 SECS 收发记录和 Flow 步骤结果。</li>
+</ul>
+<h3>AutoReply</h3>
+<ul>
+<li>配置收到特定 SxFy 后的自动回复规则。</li>
+<li>支持变量路径提取和条件匹配。</li>
+<li>适合模拟设备侧或 Host 侧的标准应答行为。</li>
+</ul>
+<h3>Flow</h3>
+<ul>
+<li>图形化编排 Send、Receive、Delay、Function 节点。</li>
+<li>支持 Flow Variables，在执行 Flow 前声明必填变量和默认值。</li>
+<li>Receive 节点可以从收到的 SECS 报文中按 index path 提取变量，例如 CarrierID、PortID、ACK 等。</li>
+<li>Function 节点和计算变量可以通过 JavaScript/TypeScript 函数从已有变量、报文内容或函数返回值生成新变量。</li>
+<li>Send 节点可以使用 <code>{VariableName}</code> 占位符，把变量带入 SML 报文。</li>
+<li>支持固定值和默认值变量，适合批量复用同一套 Flow。</li>
+<li>Receive 节点支持变量提取、计算变量和规则跳转。</li>
+<li>Flow Run 页面支持执行前变量赋值。</li>
+<li>Flow Template 可与 Checklist Binding 结合，为不同设备生成对应 Flow。</li>
+</ul>
+<h3>Checklist</h3>
+<ul>
+<li>维护 CEID/RPTID/VID 的映射关系。</li>
+<li>支持导入 Excel。</li>
+<li>根据 Checklist 生成 Dynamic Report 相关 SML。</li>
+<li>根据 Checklist + Flow Template 生成设备专属 Flow，例如 <code>A029_HOST</code>、<code>A029_INIT</code>。</li>
+</ul>
+<h2>简单使用说明</h2>
+<ol><li>打开系统地址并登录。</li>
+<li>在 Engine 页面配置或启动 HSMS 连接。</li>
+<li>在 SML 页面维护常用 SECS 报文。</li>
+<li>在 Manual SECS 页面选择 Engine 和 SML 进行手动调试。</li>
+<li>在 Checklist 页面导入或维护 CEID/RPTID/VID 定义。</li>
+<li>在 Flow 页面创建或编辑自动化流程，也可以从 Checklist + Flow Template 生成设备专属 Flow。</li>
+<li>在 Auto SECS 页面选择 Engine 和已发布 Flow 执行自动化测试。</li></ol>
+<p>新数据库首次打开会进入初始化页面，请在页面中为内置管理员账号设置密码：</p>
+<pre><code class="language-text">admin / &lt;首次初始化页面设置的密码&gt;</code></pre>
+<h2>本地开发</h2>
+<pre><code class="language-bash">npm install
+npm run dev
+npm run build
+npm run type-check</code></pre>
+<p>默认开发服务器由 Vite 提供，通常运行在 <code>http://localhost:3000</code>。后端 API 默认地址由前端运行时配置和 <code>src/utils/api.ts</code> 决定，开发时通常指向 <code>http://localhost:8080/api</code>。</p>
+<h2>开发文档</h2>
+<p>本地开发、环境变量、常用命令、技术栈和仓库边界请参考 <a href="DEVELOPER.md">DEVELOPER.md</a>。</p>
+<h2>License</h2>
+<p>本仓库中的前端源码和前端文档使用 MIT License。后端源码、预构建后端二进制、完整应用发行包、数据库迁移、种子数据和 Checklist 模板不包含在本授权范围内，需遵循各自单独的分发条款。</p>
+  </main>
+</body>
+</html>

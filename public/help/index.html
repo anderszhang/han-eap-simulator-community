@@ -4,6 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Han Eap Simulator Help</title>
+  <script>
+        (function () {
+          const nav = navigator.language || navigator.userLanguage || ''
+          if (nav.toLowerCase().startsWith('zh')) {
+            location.replace('zh-CN.html')
+          } else {
+            location.replace('en.html')
+          }
+        })()
+      </script>
   <style>
     :root {
       color: #1f2937;
@@ -18,6 +28,52 @@
       background: #fff;
       min-height: 100vh;
       box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    }
+    .language-switch {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .language-link {
+      color: #2563eb;
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .language-link:hover {
+      text-decoration: underline;
+      background: #eff6ff;
+    }
+    .language-link.active {
+      color: #1f2937;
+      font-weight: 600;
+      background: #e5e7eb;
+      pointer-events: none;
+    }
+    .language-separator { color: #d1d5db; }
+    .landing-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .landing-card {
+      display: block;
+      padding: 24px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 500;
+      background: #f9fafb;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .landing-card:hover {
+      background: #fff;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+      text-decoration: none;
     }
     h1 { margin-top: 0; font-size: 32px; }
     h2 { margin-top: 38px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
@@ -62,11 +118,14 @@
 </head>
 <body>
   <main>
+<nav class="language-switch">
+        <a class="language-link active" href="zh-CN.html">中文</a> <span class="language-separator">|</span> <a class="language-link" href="en.html">English</a>
+       </nav>
 <h1>Han Eap Simulator Web UI</h1>
 <p>Choose a language:</p>
 <ul>
-<li><a href="README.zh-CN.md">中文</a></li>
-<li><a href="README.en.md">English</a></li>
+<li><a href="zh-CN.html">中文</a></li>
+<li><a href="en.html">English</a></li>
 </ul>
 <h2>Overview</h2>
 <p>Han Eap Simulator Web UI is the frontend for a semiconductor equipment automation simulation system. It supports SECS/GEM and HSMS integration workflows, including engine management, SML message maintenance, manual SECS operations, auto-reply rules, visual Flow orchestration, and Checklist-driven SML/Flow generation.</p>
