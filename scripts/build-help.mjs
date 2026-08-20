@@ -2,12 +2,15 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const root = process.cwd()
-const readmePath = path.join(root, 'README.md')
 const docsImageDir = path.join(root, 'docs', 'images')
 const outDir = path.join(root, 'public', 'help')
 const outImageDir = path.join(outDir, 'images')
-const outPath = path.join(outDir, 'index.html')
 const developerPath = path.join(root, 'DEVELOPER.md')
+
+const languages = [
+  { code: 'zh-CN', file: 'README.zh-CN.md', label: '中文' },
+  { code: 'en', file: 'README.en.md', label: 'English' },
+]
 
 function escapeHtml(value) {
   return String(value)
@@ -17,13 +20,21 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
 }
 
+function rewriteLink(href) {
+  if (href === 'README.zh-CN.md') return 'zh-CN.html'
+  if (href === 'README.en.md') return 'en.html'
+  return href
+}
+
 function inlineMarkdown(value) {
   let result = escapeHtml(value)
   result = result.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, src) => {
     const safeSrc = String(src).replace(/^docs\/images\//, 'images/')
     return `<img src="${escapeHtml(safeSrc)}" alt="${escapeHtml(alt)}">`
   })
-  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text, href) => {
+    return `<a href="${escapeHtml(rewriteLink(href))}">${inlineMarkdown(text)}</a>`
+  })
   result = result.replace(/`([^`]+)`/g, '<code>$1</code>')
   result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   return result
@@ -148,21 +159,35 @@ function copyImages() {
   }
 }
 
-const markdown = fs.readFileSync(readmePath, 'utf8')
-const body = markdownToHtml(markdown)
+function buildPage({ title, body, lang, showLanguageSwitch, isLanding }) {
+  const languageSwitch = showLanguageSwitch
+    ? `<nav class="language-switch">
+        ${languages.map(l =>
+          `<a class="language-link${l.code === lang ? ' active' : ''}" href="${l.code === 'zh-CN' ? 'zh-CN.html' : 'en.html'}">${l.label}</a>`
+        ).join(' <span class="language-separator">|</span> ')}
+       </nav>`
+    : ''
 
-fs.mkdirSync(outDir, { recursive: true })
-copyImages()
-if (fs.existsSync(developerPath)) {
-  fs.copyFileSync(developerPath, path.join(outDir, 'DEVELOPER.md'))
-}
+  const autoRedirect = isLanding
+    ? `<script>
+        (function () {
+          const nav = navigator.language || navigator.userLanguage || ''
+          if (nav.toLowerCase().startsWith('zh')) {
+            location.replace('zh-CN.html')
+          } else {
+            location.replace('en.html')
+          }
+        })()
+      </script>`
+    : ''
 
-fs.writeFileSync(outPath, `<!doctype html>
-<html lang="zh-CN">
+  return `<!doctype html>
+<html lang="${lang}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Han Eap Simulator Help</title>
+  <title>${escapeHtml(title)}</title>
+  ${autoRedirect}
   <style>
     :root {
       color: #1f2937;
@@ -177,6 +202,52 @@ fs.writeFileSync(outPath, `<!doctype html>
       background: #fff;
       min-height: 100vh;
       box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    }
+    .language-switch {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .language-link {
+      color: #2563eb;
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .language-link:hover {
+      text-decoration: underline;
+      background: #eff6ff;
+    }
+    .language-link.active {
+      color: #1f2937;
+      font-weight: 600;
+      background: #e5e7eb;
+      pointer-events: none;
+    }
+    .language-separator { color: #d1d5db; }
+    .landing-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .landing-card {
+      display: block;
+      padding: 24px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 500;
+      background: #f9fafb;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .landing-card:hover {
+      background: #fff;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+      text-decoration: none;
     }
     h1 { margin-top: 0; font-size: 32px; }
     h2 { margin-top: 38px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
@@ -221,10 +292,66 @@ fs.writeFileSync(outPath, `<!doctype html>
 </head>
 <body>
   <main>
+${languageSwitch}
 ${body}
   </main>
 </body>
 </html>
-`, 'utf8')
+`
+}
 
-console.log(`Help generated: ${path.relative(root, outPath)}`)
+fs.mkdirSync(outDir, { recursive: true })
+copyImages()
+
+if (fs.existsSync(developerPath)) {
+  fs.copyFileSync(developerPath, path.join(outDir, 'DEVELOPER.md'))
+}
+
+// Generate per-language help pages from the split README files.
+for (const { code, file, label } of languages) {
+  const filePath = path.join(root, file)
+  if (!fs.existsSync(filePath)) {
+    console.warn(`Skipping missing help source: ${file}`)
+    continue
+  }
+  const markdown = fs.readFileSync(filePath, 'utf8')
+  const body = markdownToHtml(markdown)
+  const html = buildPage({
+    title: 'Han Eap Simulator Help',
+    body,
+    lang: code,
+    showLanguageSwitch: true,
+    isLanding: false,
+  })
+  const outPath = path.join(outDir, `${code}.html`)
+  fs.writeFileSync(outPath, html, 'utf8')
+  console.log(`Help generated: ${path.relative(root, outPath)} (${label})`)
+}
+
+// Generate the landing page from README.md, which is now a short language selector.
+const readmePath = path.join(root, 'README.md')
+if (fs.existsSync(readmePath)) {
+  const landingMarkdown = fs.readFileSync(readmePath, 'utf8')
+  let landingBody = markdownToHtml(landingMarkdown)
+
+  // If README.md is only a stub, append prominent cards to each language version.
+  const hasLanguageCards = languages.some(l => landingBody.includes(`href="${l.code}.html"`))
+  if (!hasLanguageCards) {
+    const cards = languages
+      .filter(l => fs.existsSync(path.join(root, l.file)))
+      .map(l => `<a class="landing-card" href="${l.code}.html">${l.label}</a>`)
+      .join('\n')
+    landingBody += `\n<div class="landing-links">\n${cards}\n</div>`
+  }
+
+  const landingHtml = buildPage({
+    title: 'Han Eap Simulator Help',
+    body: landingBody,
+    lang: 'zh-CN',
+    showLanguageSwitch: true,
+    isLanding: true,
+  })
+  const landingOutPath = path.join(outDir, 'index.html')
+  fs.writeFileSync(landingOutPath, landingHtml, 'utf8')
+  console.log(`Help landing generated: ${path.relative(root, landingOutPath)}`)
+}
